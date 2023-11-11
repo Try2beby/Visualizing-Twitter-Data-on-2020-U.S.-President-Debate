@@ -3,3 +3,6 @@
 test*
 *苏轼*
 *辩论*
+node_modules/
+cache/
+package*.json
