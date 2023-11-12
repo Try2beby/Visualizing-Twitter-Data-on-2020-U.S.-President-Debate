@@ -5,22 +5,29 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WordCloud</title>
+    <title>plot</title>
 
-    <style>
-        #word {
-            background-color: white;
+    <!-- <style>
+        .plot {
+            width: 100%;
+            height: 100%;
         }
-    </style>
+    </style> -->
 </head>
 
 <body>
-    <div id="word" style="margin: auto; width: 50%;"></div>
+    <div id="wordcloud" ,class='plot' ,style="margin: auto;"></div>
+    <div id="forcegraph" ,class='plot' ,style="margin: auto;"></div>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <!-- Load d3-cloud -->
-    <script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3.layout.cloud.js"></script>
-    <script src="./main_d3.js"></script>
+    <script src="https://cdn.rawgit.com/jasondavies/d3-cloud/master/build/d3.layout.cloud.js" />
+    </script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <script src="./wordcloud.js"></script>
+    <script src="./net.js"></script>
+    <script src="./plot.js"></script>
+
 </body>
 
 </html>

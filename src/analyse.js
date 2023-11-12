@@ -18,7 +18,7 @@ const cleanDataRules = [cleanData, cleanTweet, addTags, languageFilter];
 async function processData(day) {
     console.log(`processing data for day ${day}`);
 
-    let data = loadJsonFile(dataDir, dataName(day));
+    let data = await loadJsonFile(dataDir, dataName(day));
     data = cleanDataRules.reduce((data, rule) => rule(data), data);
 
     // save cleaned data to cache
@@ -26,12 +26,14 @@ async function processData(day) {
     fs.promises.writeFile(cachePath, JSON.stringify(data), "utf8");
 }
 
-function loadJsonFile(dataDir, dataName) {
+async function loadJsonFile(dataDir, dataName) {
     const filepath = path.join(dataDir, dataName);
     const content = fs.readFileSync(filepath, "utf8");
     const jsonStrings = content.split("\n");
-    // remove the last empty string
-    jsonStrings.pop();
+    // if the last line is empty, remove it
+    if (jsonStrings[jsonStrings.length - 1] === "") {
+        jsonStrings.pop();
+    }
     let data = jsonStrings.map((str) => JSON.parse(str));
     return data;
 }
