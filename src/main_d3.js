@@ -1,119 +1,136 @@
-const dataName = (num) => `2020-10-2${num}.json`;
-let day = Array.from({ length: 6 }, (_, i) => i);
-const cacheDir = "../cache/";
-let stopwords = d3.json("../utils/stopwords-en.json");
+// Copyright 2021-2023 Observable, Inc.
+// Released under the ISC license.
+// https://observablehq.com/@d3/force-directed-graph
+function ForceGraph({
+    nodes, // an iterable of node objects (typically [{id}, …])
+    links // an iterable of link objects (typically [{source, target}, …])
+}, {
+    nodeId = d => d.id, // given d in nodes, returns a unique identifier (string)
+    nodeGroup, // given d in nodes, returns an (ordinal) value for color
+    nodeGroups, // an array of ordinal values representing the node groups
+    nodeTitle, // given d in nodes, a title string
+    nodeFill = "currentColor", // node stroke fill (if not using a group color encoding)
+    nodeStroke = "#fff", // node stroke color
+    nodeStrokeWidth = 1.5, // node stroke width, in pixels
+    nodeStrokeOpacity = 1, // node stroke opacity
+    nodeRadius = 5, // node radius, in pixels
+    nodeStrength,
+    linkSource = ({ source }) => source, // given d in links, returns a node identifier string
+    linkTarget = ({ target }) => target, // given d in links, returns a node identifier string
+    linkStroke = "#999", // link stroke color
+    linkStrokeOpacity = 0.6, // link stroke opacity
+    linkStrokeWidth = 1.5, // given d in links, returns a stroke width in pixels
+    linkStrokeLinecap = "round", // link stroke linecap
+    linkStrength,
+    colors = d3.schemeTableau10, // an array of color strings, for the node groups
+    width = 640, // outer width, in pixels
+    height = 400, // outer height, in pixels
+    invalidation // when this promise resolves, stop the simulation
+} = {}) {
+    // Compute values.
+    const N = d3.map(nodes, nodeId).map(intern);
+    const LS = d3.map(links, linkSource).map(intern);
+    const LT = d3.map(links, linkTarget).map(intern);
+    if (nodeTitle === undefined) nodeTitle = (_, i) => N[i];
+    const T = nodeTitle == null ? null : d3.map(nodes, nodeTitle);
+    const G = nodeGroup == null ? null : d3.map(nodes, nodeGroup).map(intern);
+    const W = typeof linkStrokeWidth !== "function" ? null : d3.map(links, linkStrokeWidth);
+    const L = typeof linkStroke !== "function" ? null : d3.map(links, linkStroke);
 
-async function filterWords(words) {
-    let stopwords = await d3.json("../utils/stopwords-en.json");
-    // drop words in stopwords or additonal stopwords
-    // define addStopwords as ["","-"]
-    const addStopwords = ["", "-", "i’m", "/"];
-    stopwords = stopwords.concat(addStopwords);
-    // change words to lowercase when comparing
-    let fwords = words.filter(d => !stopwords.includes(d.toLowerCase()));
-    return fwords;
+    // Replace the input nodes and links with mutable objects for the simulation.
+    nodes = d3.map(nodes, (_, i) => ({ id: N[i] }));
+    links = d3.map(links, (_, i) => ({ source: LS[i], target: LT[i] }));
+
+    // Compute default domains.
+    if (G && nodeGroups === undefined) nodeGroups = d3.sort(G);
+
+    // Construct the scales.
+    const color = nodeGroup == null ? null : d3.scaleOrdinal(nodeGroups, colors);
+
+    // Construct the forces.
+    const forceNode = d3.forceManyBody().strength(-5);
+    const forceLink = d3.forceLink(links).id(({ index: i }) => N[i]);
+    if (nodeStrength !== undefined) forceNode.strength(nodeStrength);
+    if (linkStrength !== undefined) forceLink.strength(linkStrength);
+
+    const simulation = d3.forceSimulation(nodes)
+        .force("link", forceLink)
+        .force("charge", forceNode)
+        .force("center", d3.forceCenter())
+        .on("tick", ticked);
+
+    const svg = d3.create("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("viewBox", [-width / 2, -height / 2, width, height])
+        .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
+        .style("border", "1px solid lightgrey");
+
+    const link = svg.append("g")
+        .attr("stroke", typeof linkStroke !== "function" ? linkStroke : null)
+        .attr("stroke-opacity", linkStrokeOpacity)
+        .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
+        .attr("stroke-linecap", linkStrokeLinecap)
+        .selectAll("line")
+        .data(links)
+        .join("line");
+
+    const node = svg.append("g")
+        .attr("fill", nodeFill)
+        .attr("stroke", nodeStroke)
+        .attr("stroke-opacity", nodeStrokeOpacity)
+        .attr("stroke-width", nodeStrokeWidth)
+        .selectAll("circle")
+        .data(nodes)
+        .join("circle")
+        .attr("r", nodeRadius)
+        .call(drag(simulation));
+
+    if (W) link.attr("stroke-width", ({ index: i }) => W[i]);
+    if (L) link.attr("stroke", ({ index: i }) => L[i]);
+    if (G) node.attr("fill", ({ index: i }) => color(G[i]));
+    if (T) node.append("title").text(({ index: i }) => T[i]);
+    if (invalidation != null) invalidation.then(() => simulation.stop());
+
+    function intern(value) {
+        return value !== null && typeof value === "object" ? value.valueOf() : value;
+    }
+
+    function ticked() {
+        link
+            .attr("x1", d => Math.max(nodeRadius, Math.min(width - nodeRadius, d.source.x)))
+            .attr("y1", d => Math.max(nodeRadius, Math.min(height - nodeRadius, d.source.y)))
+            .attr("x2", d => Math.max(nodeRadius, Math.min(width - nodeRadius, d.target.x)))
+            .attr("y2", d => Math.max(nodeRadius, Math.min(height - nodeRadius, d.target.y)));
+
+        node
+            .attr("cx", d => Math.max(nodeRadius, Math.min(width - nodeRadius, d.x)))
+            .attr("cy", d => Math.max(nodeRadius, Math.min(height - nodeRadius, d.y)));
+    }
+
+    function drag(simulation) {
+        function dragstarted(event) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.subject.x;
+            event.subject.fy = event.subject.y;
+        }
+
+        function dragged(event) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+        }
+
+        function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;
+        }
+
+        return d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended);
+    }
+
+    return Object.assign(svg.node(), { scales: { color } });
 }
-
-async function plotWord() {
-    d3.json(cacheDir + dataName(day[0])).then(data => {
-        // use first 1000 objects for testing
-        data = data.slice(0, 1000);
-
-        // Split the tweets into words
-        let words = data.flatMap(obj => obj.tweet.split(/\s+/));
-
-        filterWords(words).then(fWords => {
-            // Count the frequency of each word
-            let wordCounts = new Map();
-            fWords.forEach(word => wordCounts.set(word, (wordCounts.get(word) || 0) + 1));
-            // calculate the frequency percentage
-            let wordFreq = Array.from(wordCounts, ([word, count]) => ({ word: word, frequency: count / fWords.length, count: count }));
-            // keep word with frequency > 0.001
-            wordFreq = wordFreq.filter(d => d.frequency > 0.001);
-            // sort the words by frequency
-            wordFreq.sort((a, b) => b.frequency - a.frequency);
-            // keep the top 30 words
-            return wordFreq.slice(0, 20);
-        }).then(data => {
-            // Declare the chart dimensions and margins.
-            const width = 500;
-            const height = 400;
-            const marginTop = 30;
-            const marginRight = 0;
-            const marginBottom = 30;
-            const marginLeft = 80;
-
-            // Declare the y (vertical position) scale.
-            const y = d3.scaleBand()
-                .domain(d3.groupSort(data, ([d]) => -d.frequency, (d) => d.word)) // descending frequency
-                .range([marginTop, height - marginBottom])
-                .padding(0.1);
-
-            // Declare the x (horizontal position) scale.
-            const x = d3.scaleLinear()
-                .domain([0, d3.max(data, (d) => d.frequency)])
-                .range([marginLeft, width - marginRight]);
-
-            // Create the SVG container.
-            const svg = d3.select('#word')
-                .append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .attr("viewBox", [0, 0, width, height])
-                .attr("style", "max-width: 100%; height: auto;");
-
-            // Add a rect for each bar.
-            svg.append("g")
-                .attr("fill", "steelblue")
-                .selectAll()
-                .data(data)
-                .join("rect")
-                .attr("y", (d) => y(d.word))
-                .attr("x", x(0))
-                .attr("width", (d) => x(d.frequency) - x(0))
-                .attr("height", y.bandwidth());
-
-            // Add the word label.
-            svg.append("g")
-                .attr("fill", "black")
-                .selectAll()
-                .data(data)
-                .join("text")
-                .attr("x", d => x(d.frequency) - 10)
-                .attr("y", d => y(d.word) + y.bandwidth() / 2)
-                .attr("dy", "0.35em")
-                .attr("text-anchor", "middle")
-                .style("font-size", "6px")
-                .text(d => (d.frequency * 100).toPrecision(2) + "%");
-
-            // Add the y-axis and label.
-            svg.append("g")
-                .attr("transform", `translate(${marginLeft},0)`)
-                .call(d3.axisLeft(y).tickSizeOuter(0))
-                .selectAll("text")
-                .attr("transform", "rotate(-25)")
-                .attr("dy", "-5px")
-
-
-            // Add the x-axis and label, and remove the domain line.
-            // svg.append("g")
-            //     .attr("transform", `translate(0,${height - marginBottom})`)
-            //     .call(d3.axisBottom(x).tickFormat((x) => (x * 100).toPrecision(2) + "%"))
-            //     // .call(d3.axisBottom(x))
-            //     .call(g => g.select(".domain").remove())
-            //     .call(g => g.append("text")
-            //         .attr("x", width - marginRight)
-            //         .attr("y", -10)
-            //         .attr("fill", "currentColor")
-            //         .attr("text-anchor", "end")
-            //         .text("→ Frequency (%)"));
-
-        });
-    });
-}
-
-plotWord();
-
-
-
-

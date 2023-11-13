@@ -18,7 +18,7 @@ async function filterWords(words) {
 async function processWord() {
     let data = await d3.json(cacheDir + dataName(day[0]));
     // use first 1000 objects for testing
-    data = data.slice(0, 1000);
+    // data = data.slice(0, 1000);
     // Split the tweets into words
     let words = data.flatMap(obj => obj.tweet.split(/\s+/));
     let fWords = await filterWords(words);
@@ -58,8 +58,6 @@ async function buildGraph() {
     // the size of the node is a function of replies_count, retweets_count, likes_count 
     let nodes = [];
     let links = [];
-    let nodeMap = new Map();
-    let linkMap = new Map();
     // create nodes for each tweet
     data.forEach(obj => {
         let node = {};
@@ -69,15 +67,18 @@ async function buildGraph() {
         node.replies_count = obj.replies_count;
         node.retweets_count = obj.retweets_count;
         node.likes_count = obj.likes_count;
-        nodeMap.set(node.id, node);
+        node.tweet = obj.tweet;
+        node.username = obj.username;
+        node.date = obj.date;
+        node.time = obj.time;
+        node.type = "tweet"
         nodes.push(node);
     });
     nodes.forEach(node => {
         let link = {};
         link.source = node.id;
         link.target = node.conversation_id;
-        link.value = node.replies_count + node.retweets_count + node.likes_count;
-        linkMap.set(link.source + link.target, link);
+        link.value = (node.replies_count + node.retweets_count + node.likes_count) / 20 + 1;
         links.push(link);
     });
     // create nodes for each conversation
@@ -85,7 +86,7 @@ async function buildGraph() {
         let node = {};
         node.id = obj.id;
         node.group = obj.id;
-        nodeMap.set(node.id, node);
+        node.type = "conversation";
         nodes.push(node);
     });
     let graph = {};
@@ -97,11 +98,10 @@ async function buildGraph() {
 
 async function plot() {
     let wordFreq = await processWord();
-    // window.createWordCloud(wordFreq);
+    window.createWordCloud(wordFreq);
     let graph = await buildGraph();
-    window.betterForceGraph(graph)
-    // let forceGraph = window.createForceGraph(graph);
-    // document.getElementById("forcegraph").appendChild(forceGraph);
+    let forceGraph = window.createForceGraph(graph);
+    document.getElementById("forcegraph").appendChild(forceGraph);
 }
 
 plot();

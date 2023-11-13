@@ -1,8 +1,10 @@
 function createWordCloud(myWords) {
     var fill = d3.scaleOrdinal(d3.schemeCategory10);
 
+    width = 500;
+    height = 500;
     var layout = d3.layout.cloud()
-        .size([400, 400])
+        .size([width, height])
         .words(myWords.map(function (d) {
             return { text: d.word, size: 13 + d.frequency * 900, test: "haha", frequency: d.frequency, count: d.count };
         }))

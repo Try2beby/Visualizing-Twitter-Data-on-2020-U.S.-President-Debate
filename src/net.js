@@ -1,139 +1,3 @@
-// Copyright 2021-2023 Observable, Inc.
-// Released under the ISC license.
-// https://observablehq.com/@d3/force-directed-graph
-function ForceGraph({
-    nodes, // an iterable of node objects (typically [{id}, …])
-    links // an iterable of link objects (typically [{source, target}, …])
-}, {
-    nodeId = d => d.id, // given d in nodes, returns a unique identifier (string)
-    nodeGroup, // given d in nodes, returns an (ordinal) value for color
-    nodeGroups, // an array of ordinal values representing the node groups
-    nodeTitle, // given d in nodes, a title string
-    nodeFill = "currentColor", // node stroke fill (if not using a group color encoding)
-    nodeStroke = "#fff", // node stroke color
-    nodeStrokeWidth = 1.5, // node stroke width, in pixels
-    nodeStrokeOpacity = 1, // node stroke opacity
-    nodeRadius = 5, // node radius, in pixels
-    nodeStrength,
-    linkSource = ({ source }) => source, // given d in links, returns a node identifier string
-    linkTarget = ({ target }) => target, // given d in links, returns a node identifier string
-    linkStroke = "#999", // link stroke color
-    linkStrokeOpacity = 0.6, // link stroke opacity
-    linkStrokeWidth = 1.5, // given d in links, returns a stroke width in pixels
-    linkStrokeLinecap = "round", // link stroke linecap
-    linkStrength,
-    colors = d3.schemeTableau10, // an array of color strings, for the node groups
-    width = 640, // outer width, in pixels
-    height = 400, // outer height, in pixels
-    invalidation // when this promise resolves, stop the simulation
-} = {}) {
-    // Compute values.
-    const N = d3.map(nodes, nodeId).map(intern);
-    const LS = d3.map(links, linkSource).map(intern);
-    const LT = d3.map(links, linkTarget).map(intern);
-    if (nodeTitle === undefined) nodeTitle = (_, i) => N[i];
-    const T = nodeTitle == null ? null : d3.map(nodes, nodeTitle);
-    const G = nodeGroup == null ? null : d3.map(nodes, nodeGroup).map(intern);
-    const W = typeof linkStrokeWidth !== "function" ? null : d3.map(links, linkStrokeWidth);
-    const L = typeof linkStroke !== "function" ? null : d3.map(links, linkStroke);
-
-    // Replace the input nodes and links with mutable objects for the simulation.
-    nodes = d3.map(nodes, (_, i) => ({ id: N[i] }));
-    links = d3.map(links, (_, i) => ({ source: LS[i], target: LT[i] }));
-
-    // Compute default domains.
-    if (G && nodeGroups === undefined) nodeGroups = d3.sort(G);
-
-    // Construct the scales.
-    const color = nodeGroup == null ? null : d3.scaleOrdinal(nodeGroups, colors);
-
-    // Construct the forces.
-    const forceNode = d3.forceManyBody().strength(-5);
-    const forceLink = d3.forceLink(links).id(({ index: i }) => N[i]);
-    if (nodeStrength !== undefined) forceNode.strength(nodeStrength);
-    if (linkStrength !== undefined) forceLink.strength(linkStrength);
-
-    const simulation = d3.forceSimulation(nodes)
-        .force("link", forceLink)
-        .force("charge", forceNode)
-        .force("center", d3.forceCenter())
-        .on("tick", ticked);
-
-    const svg = d3.create("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("viewBox", [-width / 2, -height / 2, width, height])
-        .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
-        .style("border", "1px solid lightgrey");
-
-    const link = svg.append("g")
-        .attr("stroke", typeof linkStroke !== "function" ? linkStroke : null)
-        .attr("stroke-opacity", linkStrokeOpacity)
-        .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
-        .attr("stroke-linecap", linkStrokeLinecap)
-        .selectAll("line")
-        .data(links)
-        .join("line");
-
-    const node = svg.append("g")
-        .attr("fill", nodeFill)
-        .attr("stroke", nodeStroke)
-        .attr("stroke-opacity", nodeStrokeOpacity)
-        .attr("stroke-width", nodeStrokeWidth)
-        .selectAll("circle")
-        .data(nodes)
-        .join("circle")
-        .attr("r", nodeRadius)
-        .call(drag(simulation));
-
-    if (W) link.attr("stroke-width", ({ index: i }) => W[i]);
-    if (L) link.attr("stroke", ({ index: i }) => L[i]);
-    if (G) node.attr("fill", ({ index: i }) => color(G[i]));
-    if (T) node.append("title").text(({ index: i }) => T[i]);
-    if (invalidation != null) invalidation.then(() => simulation.stop());
-
-    function intern(value) {
-        return value !== null && typeof value === "object" ? value.valueOf() : value;
-    }
-
-    function ticked() {
-        link
-            .attr("x1", d => Math.max(nodeRadius, Math.min(width - nodeRadius, d.source.x)))
-            .attr("y1", d => Math.max(nodeRadius, Math.min(height - nodeRadius, d.source.y)))
-            .attr("x2", d => Math.max(nodeRadius, Math.min(width - nodeRadius, d.target.x)))
-            .attr("y2", d => Math.max(nodeRadius, Math.min(height - nodeRadius, d.target.y)));
-
-        node
-            .attr("cx", d => Math.max(nodeRadius, Math.min(width - nodeRadius, d.x)))
-            .attr("cy", d => Math.max(nodeRadius, Math.min(height - nodeRadius, d.y)));
-    }
-
-    function drag(simulation) {
-        function dragstarted(event) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            event.subject.fx = event.subject.x;
-            event.subject.fy = event.subject.y;
-        }
-
-        function dragged(event) {
-            event.subject.fx = event.x;
-            event.subject.fy = event.y;
-        }
-
-        function dragended(event) {
-            if (!event.active) simulation.alphaTarget(0);
-            event.subject.fx = null;
-            event.subject.fy = null;
-        }
-
-        return d3.drag()
-            .on("start", dragstarted)
-            .on("drag", dragged)
-            .on("end", dragended);
-    }
-
-    return Object.assign(svg.node(), { scales: { color } });
-}
 
 function betterForceGraph(graph) {
     // 设置画布大小-四周留间距
@@ -161,7 +25,7 @@ function betterForceGraph(graph) {
             .id(d => d.id) 	// 每个节点的id的获取方式
             .strength(d => d.source.group === d.target.group ? 1 : 0.3)) // 
         // 万有引力
-        .force("charge", d3.forceManyBody().strength(-1))
+        .force("charge", d3.forceManyBody().strength(-8))
         // 
         // Q1 把力导图的力的中心移到平面中央
         // 
@@ -356,9 +220,145 @@ function betterForceGraph(graph) {
         event.subject.fx = null;
         event.subject.fy = null;
     }
+}
 
+function DisjointForceDirectedGraph(data) {
+    // Specify the dimensions of the chart.
+    const width = 500;
+    const height = 500;
 
+    // Specify the color scale.
+    const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    // The force simulation mutates links and nodes, so create a copy
+    // so that re-evaluating this cell produces the same result.
+    const links = data.links.map(d => ({ ...d }));
+    const nodes = data.nodes.map(d => ({ ...d }));
+
+    // Create a simulation with several forces.
+    const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id))
+        .force("charge", d3.forceManyBody())
+        .force("x", d3.forceX())
+        .force("y", d3.forceY());
+
+    // Create the SVG container.
+    const svg = d3.create("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("viewBox", [-width / 2, -height / 2, width, height])
+        .attr("style", "max-width: 100%; height: auto;")
+        .style("border", "1px solid lightgrey");
+
+    // Add a line for each link, and a circle for each node.
+    const link = svg.append("g")
+        .attr("stroke", "#999")
+        .attr("stroke-opacity", 0.6)
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("stroke-width", d => Math.sqrt(d.value));
+
+    const node = svg.append("g")
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1.5)
+        .selectAll("circle")
+        .data(nodes)
+        .join("circle")
+        .attr("r", 5)
+        .attr("fill", d => color(d.group));
+
+    // node.append("title")
+    //     .text(d => d.id);
+
+    // Add a drag behavior.
+    node.call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+
+    // Set the position attributes of links and nodes each time the simulation ticks.
+    simulation.on("tick", () => {
+        link
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        node
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y);
+    });
+
+    // add tooltip by tippy
+    // if __data__.type == "tweet"
+    node.nodes().forEach(function (node) {
+        let tooltipContent;
+        const d = node.__data__;
+        switch (node.__data__.type) {
+            case "tweet":
+                tooltipContent = `
+                <div class="post">
+                <div class="post-header">
+                  <span>${d.username}</span>
+                  <span>${d.date.substring(5)} 22:42:30</span>
+                </div>
+                <div class="post-content">${d.tweet}</div>
+                <div class="post-footer">
+                <span class="reply-count">💬 ${d.replies_count}&nbsp;&nbsp;&nbsp;</span>
+                <span class="retweet-count">🔁 ${d.retweets_count}&nbsp;&nbsp;&nbsp;</span>
+                <span class="like-count">❤️ ${d.likes_count}</span>
+                </div>
+                `;
+                break;
+            case "conversation":
+                tooltipContent = `
+                    <table style="text-align: left; font-size: 10px;">
+                        <tr>
+                            <th>Conversation</th>
+                        </tr>
+                    </table>
+                `;
+                break;
+            default:
+                break;
+        }
+        tippy(node, {
+            content: tooltipContent,
+            theme: 'light',
+            allowHTML: true,
+        });
+    });
+
+    // Reheat the simulation when drag starts, and fix the subject position.
+    function dragstarted(event) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+    }
+
+    // Update the subject (dragged node) position during drag.
+    function dragged(event) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+    }
+
+    // Restore the target alpha so the simulation cools after dragging ends.
+    // Unfix the subject position now that it’s no longer being dragged.
+    function dragended(event) {
+        if (!event.active) simulation.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+    }
+
+    // When this cell is re-run, stop the previous simulation. (This doesn’t
+    // really matter since the target alpha is zero and the simulation will
+    // stop naturally, but it’s a good practice.)
+    // invalidation.then(() => simulation.stop());
+
+    return svg.node();
 }
 
 // window.createForceGraph = ForceGraph;
-window.betterForceGraph = betterForceGraph;
+// window.createForceGraph = betterForceGraph;
+window.createForceGraph = DisjointForceDirectedGraph;
