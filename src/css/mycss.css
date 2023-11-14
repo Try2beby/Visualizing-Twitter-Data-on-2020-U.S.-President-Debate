@@ -52,4 +52,11 @@ body {
   }
   .like-count:hover, .retweet-count:hover  .reply-count:hover{
     color: #007bff; /* 鼠标悬停时改变颜色 */
+
+  
   }
+
+  .tippy-tooltip.transparent-theme {
+    background:transparent;
+  }
+

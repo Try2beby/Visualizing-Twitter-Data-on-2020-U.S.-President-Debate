@@ -20,10 +20,11 @@ async function processData(day) {
 
     let data = await loadJsonFile(dataDir, dataName(day));
     data = cleanDataRules.reduce((data, rule) => rule(data), data);
-
+    console.log(`data length after cleaning: ${data.length}`);
     // save cleaned data to cache
     let cachePath = path.join(cacheDir, dataName(day));
     fs.promises.writeFile(cachePath, JSON.stringify(data), "utf8");
+    console.log(`data saved to ${cachePath}`);
 }
 
 async function loadJsonFile(dataDir, dataName) {
@@ -59,19 +60,19 @@ function cleanData(data, use_columns = useColumns) {
 }
 
 function cleanTweet(data) {
-    // remove retweet, @, url, newline, "#",".","?","!",",","&amp;","2020"
+    // remove retweet, @, url, newline,".","?","!",",","&amp;","2020",hashtags
     data = data.map((obj) => {
-        obj.tweet = obj.tweet.replace(/RT @[\w]*:/g, "") // remove retweet
+        obj.cleaned_tweet = obj.tweet.replace(/RT @[\w]*:/g, "") // remove retweet
             .replace(/@[\w]*/g, "") // remove @
             .replace(/https?:\/\/[A-Za-z0-9./]*/g, "")  // remove url
             .replace(/\n/g, "")    // remove newline
-            .replace(/#/g, "")   // remove #
             .replace(/\./g, "")    // remove .
             .replace(/\?/g, "")    // remove ?
             .replace(/!/g, "")    // remove !
             .replace(/,/g, "")    // remove ,
             .replace(/&amp;/g, "")    // remove &amp;
             .replace(/2020/g, "")    // remove 2020
+            .replace(/#[\w]*/g, "");    // remove hashtags
 
         return obj;
     });

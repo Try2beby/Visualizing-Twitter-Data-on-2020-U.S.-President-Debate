@@ -4,23 +4,28 @@ let day = Array.from({ length: 6 }, (_, i) => i);
 const cacheDir = "../cache/";
 let stopwords = d3.json("../utils/stopwords-en.json");
 
+
+async function loadData() {
+    const data = await d3.json(cacheDir + dataName(day[0]));
+    return data;
+}
+
 async function filterWords(words) {
     let stopwords = await d3.json("../utils/stopwords-en.json");
     // drop words in stopwords or additonal stopwords
     // define addStopwords as ["","-"]
-    const addStopwords = ["", "-", "i’m", "/"];
+    const addStopwords = ["", "-", "i’m", "/", 'don’t', "'s", ":", "2", "4"];
     stopwords = stopwords.concat(addStopwords);
     // change words to lowercase when comparing
     let fwords = words.filter(d => !stopwords.includes(d.toLowerCase()));
     return fwords;
 }
 
-async function processWord() {
-    let data = await d3.json(cacheDir + dataName(day[0]));
+async function processWord(data) {
     // use first 1000 objects for testing
     // data = data.slice(0, 1000);
     // Split the tweets into words
-    let words = data.flatMap(obj => obj.tweet.split(/\s+/));
+    let words = data.flatMap(obj => obj.cleaned_tweet.split(/\s+/));
     let fWords = await filterWords(words);
     // Count the frequency of each word
     let wordCounts = new Map();
@@ -37,20 +42,17 @@ async function processWord() {
     return wordFreq;
 }
 
-async function buildGraph() {
-    let data = await d3.json(cacheDir + dataName(day[0]));
-    // use first 1000 objects for testing
-    // data = data.slice(0, 10000);
+async function buildGraph(data, conversation_threshold = 100, count_threshold = 10) {
     // Count the frequency of each conversation_id
     let conversationCounts = new Map();
     data.forEach(obj => conversationCounts.set(obj.conversation_id, (conversationCounts.get(obj.conversation_id) || 0) + 1));
     // keep conversation_id with frequency > 100
     let conversation_id = Array.from(conversationCounts, ([id, count]) => ({ id: id, count: count }));
-    conversation_id = conversation_id.filter(d => d.count > 100);
+    conversation_id = conversation_id.filter(d => d.count > conversation_threshold);
     // Keep objects with conversation_id in conversation_id
     data = data.filter(obj => conversation_id.map(d => d.id).includes(obj.conversation_id));
     // Keep objects with replies_count+retweets_count+likes_count > 10
-    data = data.filter(obj => obj.replies_count + obj.retweets_count + obj.likes_count > 10);
+    data = data.filter(obj => obj.replies_count + obj.retweets_count + obj.likes_count > count_threshold);
 
     // bulid graph from data.id,data.conversation_id
     // data.replies_count, data.retweets_count, data.likes_count
@@ -97,15 +99,12 @@ async function buildGraph() {
 
 
 async function plot() {
-    let wordFreq = await processWord();
+    let data = await loadData();
+    const wordFreq = await processWord(data);
     window.createWordCloud(wordFreq);
-    let graph = await buildGraph();
+    const graph = await buildGraph(data);
     let forceGraph = window.createForceGraph(graph);
     document.getElementById("forcegraph").appendChild(forceGraph);
 }
 
 plot();
-
-
-
-

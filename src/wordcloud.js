@@ -6,7 +6,7 @@ function createWordCloud(myWords) {
     var layout = d3.layout.cloud()
         .size([width, height])
         .words(myWords.map(function (d) {
-            return { text: d.word, size: 13 + d.frequency * 900, test: "haha", frequency: d.frequency, count: d.count };
+            return { text: d.word, size: 15 + d.frequency * 1500, test: "haha", frequency: d.frequency, count: d.count };
         }))
         .padding(5)
         // .rotate(function () { return ~~(Math.random() * 2) * 90; })

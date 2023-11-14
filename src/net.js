@@ -259,6 +259,12 @@ function DisjointForceDirectedGraph(data) {
         .join("line")
         .attr("stroke-width", d => Math.sqrt(d.value));
 
+    // set tooltip, width 300px
+    let tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0)
+        .style("width", "200px");
+
     const node = svg.append("g")
         .attr("stroke", "#fff")
         .attr("stroke-width", 1.5)
@@ -266,7 +272,42 @@ function DisjointForceDirectedGraph(data) {
         .data(nodes)
         .join("circle")
         .attr("r", 5)
-        .attr("fill", d => color(d.group));
+        .attr("fill", d => color(d.group))
+        .on('mouseover', function (event, d) {
+
+            d3.select(this).transition().attr("r", 10);
+            // tooltip.transition()
+            //     .duration(250) // 设置transition效果的速度，默认为500ms
+            //     .style("opacity", 1);
+
+            // tooltip.html(
+            //     `<div class="post">
+            //     <div class="post-header">
+            //       <span>${d.username}</span>
+            //       <span>${d.date.substring(5)} 22:42:30</span>
+            //     </div>
+            //     <div class="post-content">${d.tweet}</div>
+            //     <div class="post-footer">
+            //     <span class="reply-count">💬 ${d.replies_count}&nbsp;&nbsp;&nbsp;</span>
+            //     <span class="retweet-count">🔁 ${d.retweets_count}&nbsp;&nbsp;&nbsp;</span>
+            //     <span class="like-count">❤️ ${d.likes_count}</span>
+            //     </div>`
+            // )
+            //     // 设置tooltip距离鼠标的相对位置
+            //     .style("left", (event.pageX + 15 - 500) + "px")
+            //     .style("top", (event.pageY - 28) + "px");
+
+        })
+        .on('mouseout', function (event, d) {
+
+            d3.select(this).transition().attr("r", 5);
+
+            // tooltip.transition()
+            //     .duration(250)
+            //     .style("opacity", 0);
+
+        });;
+
 
     // node.append("title")
     //     .text(d => d.id);
@@ -291,17 +332,17 @@ function DisjointForceDirectedGraph(data) {
     });
 
     // add tooltip by tippy
-    // if __data__.type == "tweet"
     node.nodes().forEach(function (node) {
         let tooltipContent;
+        let theme;
         const d = node.__data__;
-        switch (node.__data__.type) {
+        switch (d.type) {
             case "tweet":
                 tooltipContent = `
                 <div class="post">
                 <div class="post-header">
                   <span>${d.username}</span>
-                  <span>${d.date.substring(5)} 22:42:30</span>
+                  <span>${d.date.substring(5)} ${d.time}</span>
                 </div>
                 <div class="post-content">${d.tweet}</div>
                 <div class="post-footer">
@@ -310,6 +351,7 @@ function DisjointForceDirectedGraph(data) {
                 <span class="like-count">❤️ ${d.likes_count}</span>
                 </div>
                 `;
+                theme = "transparent";
                 break;
             case "conversation":
                 tooltipContent = `
@@ -319,14 +361,17 @@ function DisjointForceDirectedGraph(data) {
                         </tr>
                     </table>
                 `;
+                theme = "light";
                 break;
             default:
                 break;
         }
         tippy(node, {
             content: tooltipContent,
-            theme: 'light',
+            theme: theme,
             allowHTML: true,
+            // hide arrow
+            arrow: false,
         });
     });
 
