@@ -28,6 +28,14 @@
             align-content: center;
         }
 
+        .option-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: max-content;
+        }
+
         .tippy-box[data-theme~='transparent'] {
             background-color: transparent;
         }
@@ -38,6 +46,10 @@
     <div class="myplot-container">
         <span id="forcegraph" class="myplot"></span>
         <span id="wordcloud" class="myplot"></span>
+    </div>
+    <div class="option-container">
+        <span id="forcegraph-options" class="options-container"></span>
+        <span id="wordcloud-options" class="options-container"></span>
     </div>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>

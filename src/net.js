@@ -44,9 +44,9 @@ function DisjointForceDirectedGraph(data) {
         .attr("class", "brush")
         .call(brush);
 
-    addDayOption(svg, width, height);
-    addConvThresholdInput(svg, width, height);
-    addCountThresholdInput(svg, width, height);
+    // addDayOption(svg, width, height);
+    // addConvThresholdInput(svg, width, height);
+    // addCountThresholdInput(svg, width, height);
 
     const node = svg.append("g")
         .attr("stroke", "#fff")

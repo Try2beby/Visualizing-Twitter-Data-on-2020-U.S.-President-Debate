@@ -1,5 +1,5 @@
 const dataName = (num) => `2020-10-2${num}.json`;
-let day = Array.from({ length: 6 }, (_, i) => i);
+const day = Array.from({ length: 6 }, (_, i) => i);
 const cacheDir = "../cache/";
 let stopwords = d3.json("../utils/stopwords-en.json");
 let params = {};
@@ -9,11 +9,17 @@ params.conversationThreshold = 50;
 params.countThreshold = 5;
 params.top = 30;
 params.day = 0;
+params.data = NaN;
 params.Data = [];
+params.DataReady = false;
 
 async function loadAllData() {
-    let promises = day.map(loadData);
-    params.Data = await Promise.all(promises);
+    const worker = new Worker("worker.js");
+    worker.postMessage(day.map(d => cacheDir + dataName(d)));
+    worker.onmessage = function (e) {
+        params.Data = e.data;
+        params.DataReady = true;
+    }
 }
 
 async function loadData(day) {
