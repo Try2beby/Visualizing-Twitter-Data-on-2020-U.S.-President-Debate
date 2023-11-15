@@ -1,12 +1,23 @@
-
 const dataName = (num) => `2020-10-2${num}.json`;
 let day = Array.from({ length: 6 }, (_, i) => i);
 const cacheDir = "../cache/";
 let stopwords = d3.json("../utils/stopwords-en.json");
+let params = {};
+params.width = 500;
+params.height = 550;
+params.conversationThreshold = 50;
+params.countThreshold = 5;
+params.top = 30;
+params.day = 0;
+params.Data = [];
 
+async function loadAllData() {
+    let promises = day.map(loadData);
+    params.Data = await Promise.all(promises);
+}
 
-async function loadData() {
-    const data = await d3.json(cacheDir + dataName(day[0]));
+async function loadData(day) {
+    const data = await d3.json(cacheDir + dataName(day));
     return data;
 }
 
@@ -14,7 +25,7 @@ async function filterWords(words) {
     let stopwords = await d3.json("../utils/stopwords-en.json");
     // drop words in stopwords or additonal stopwords
     // define addStopwords as ["","-"]
-    const addStopwords = ["", "-", "i’m", "/", 'don’t', "'s", ":", "2", "4"];
+    const addStopwords = ["", "-", "i’m", "/", 'don’t', "'s", ":", "\"", "“", "”"];
     stopwords = stopwords.concat(addStopwords);
     // change words to lowercase when comparing
     let fwords = words.filter(d => !stopwords.includes(d.toLowerCase()));
@@ -37,23 +48,24 @@ async function processWord(data) {
     // sort the words by frequency
     wordFreq.sort((a, b) => b.frequency - a.frequency);
     // keep the top 30 words
-    wordFreq = wordFreq.slice(0, 30);
+    wordFreq = wordFreq.slice(0, params.top);
 
     return wordFreq;
 }
 
-async function buildGraph(data, conversation_threshold = 100, count_threshold = 10) {
+async function buildGraph(data) {
     // Count the frequency of each conversation_id
     let conversationCounts = new Map();
     data.forEach(obj => conversationCounts.set(obj.conversation_id, (conversationCounts.get(obj.conversation_id) || 0) + 1));
     // keep conversation_id with frequency > 100
     let conversation_id = Array.from(conversationCounts, ([id, count]) => ({ id: id, count: count }));
-    conversation_id = conversation_id.filter(d => d.count > conversation_threshold);
+    conversation_id = conversation_id.filter(d => d.count > params.conversationThreshold);
     // Keep objects with conversation_id in conversation_id
     data = data.filter(obj => conversation_id.map(d => d.id).includes(obj.conversation_id));
     // Keep objects with replies_count+retweets_count+likes_count > 10
-    data = data.filter(obj => obj.replies_count + obj.retweets_count + obj.likes_count > count_threshold);
+    data = data.filter(obj => obj.replies_count + obj.retweets_count + obj.likes_count > params.countThreshold);
 
+    updateWordCloud(data);
     // bulid graph from data.id,data.conversation_id
     // data.replies_count, data.retweets_count, data.likes_count
     // each node is a tweet, if two tweets have the same conversation_id, they link to same conversation
@@ -70,6 +82,7 @@ async function buildGraph(data, conversation_threshold = 100, count_threshold = 
         node.retweets_count = obj.retweets_count;
         node.likes_count = obj.likes_count;
         node.tweet = obj.tweet;
+        node.cleaned_tweet = obj.cleaned_tweet;
         node.username = obj.username;
         node.date = obj.date;
         node.time = obj.time;
@@ -97,14 +110,48 @@ async function buildGraph(data, conversation_threshold = 100, count_threshold = 
     return graph;
 }
 
+async function updateWordCloud(data) {
+    // update wordcloud
+    let wordFreq = await processWord(data);
+    let element = document.getElementById("wordcloud");
+    element.innerHTML = "";
+    createWordCloud(wordFreq, update = true);
+}
+
+function updateGraph(word, flag) {
+    if (flag) {
+        d3.selectAll("circle").filter(function (d) {
+            return d.type === "tweet" && d.cleaned_tweet.includes(word);
+        }).transition().attr("r", 8);
+    }
+    else {
+        d3.selectAll("circle").filter(function (d) {
+            return d.type === "tweet" && d.cleaned_tweet.includes(word);
+        }).transition().attr("r", 5);
+    }
+    return !flag;
+}
+
+
+async function plotGraphWithoutReload() {
+    let graph = await buildGraph(params.data);
+    let graphElement = document.getElementById("forcegraph");
+    graphElement.innerHTML = "";
+    let forceGraph = DisjointForceDirectedGraph(graph);
+    document.getElementById("forcegraph").appendChild(forceGraph);
+}
 
 async function plot() {
-    let data = await loadData();
-    const wordFreq = await processWord(data);
-    window.createWordCloud(wordFreq);
+    let data = await loadData(params.day);
+    params.data = data;
+    // const wordFreq = await processWord(data);
+    // createWordCloud(wordFreq);
     const graph = await buildGraph(data);
-    let forceGraph = window.createForceGraph(graph);
+    let graphElement = document.getElementById("forcegraph");
+    graphElement.innerHTML = "";
+    let forceGraph = DisjointForceDirectedGraph(graph);
     document.getElementById("forcegraph").appendChild(forceGraph);
 }
 
 plot();
+loadAllData();

@@ -1,12 +1,12 @@
 function createWordCloud(myWords) {
     var fill = d3.scaleOrdinal(d3.schemeCategory10);
 
-    width = 500;
-    height = 500;
+    width = params.width;
+    height = params.height;
     var layout = d3.layout.cloud()
         .size([width, height])
         .words(myWords.map(function (d) {
-            return { text: d.word, size: 15 + d.frequency * 1500, test: "haha", frequency: d.frequency, count: d.count };
+            return { text: d.word, size: 15 + d.frequency * 1500, frequency: d.frequency, count: d.count };
         }))
         .padding(5)
         // .rotate(function () { return ~~(Math.random() * 2) * 90; })
@@ -17,13 +17,15 @@ function createWordCloud(myWords) {
 
     layout.start();
 
+    let flag = 0;
+
     function draw(words) {
         var svg = d3.select("#wordcloud").append("svg")
             .attr("width", layout.size()[0])
             .attr("height", layout.size()[1])
             .style("border", "1px solid lightgrey")
             .append("g")
-            .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
+            .attr("transform", "translate(" + layout.size()[0] / 2 + "," + (layout.size()[1] / 2) + ")")
         var texts = svg.selectAll("text")
             .data(words)
             .enter().append("text")
@@ -35,6 +37,24 @@ function createWordCloud(myWords) {
                 return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
             })
             .text(function (d) { return d.text; })
+            .on("click", function (event, d) {
+                const word = d.text;
+                if (flag === 0) {
+                    d3.selectAll("circle").filter(function (d) {
+                        return d.type === "tweet" && d.cleaned_tweet.includes(word);
+                    }).transition().attr("r", 8);
+                    flag = 1;
+                }
+                else {
+                    d3.selectAll("circle").filter(function (d) {
+                        return d.type === "tweet" && d.cleaned_tweet.includes(word);
+                    }).transition().attr("r", 5);
+                    flag = 0;
+                }
+            });
+
+        addTopInput(svg, width, height);
+
         texts.nodes().forEach(function (node) {
             tippy(node, {
                 content: `
@@ -57,5 +77,3 @@ function createWordCloud(myWords) {
         });
     }
 }
-
-window.createWordCloud = createWordCloud;

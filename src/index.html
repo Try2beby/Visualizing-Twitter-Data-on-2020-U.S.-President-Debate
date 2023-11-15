@@ -12,13 +12,19 @@
     <!-- link to my css file -->
     <link rel="stylesheet" href="./css/mycss.css">
     <style>
+        .options-container {
+            text-align: center;
+            margin-bottom: 20px;
+            display: block;
+        }
+
         .myplot-container {
             display: flex;
         }
 
         .myplot {
             width: 500px;
-            height: 500px;
+            height: 600px;
             align-content: center;
         }
 
@@ -29,11 +35,9 @@
 </head>
 
 <body>
-    <!-- place wordcloud and forcegraph in a html table -->
-    <!-- center the table -->
     <div class="myplot-container">
-        <div id="wordcloud" class="myplot"></div>
-        <div id="forcegraph" class="myplot"></div>
+        <span id="forcegraph" class="myplot"></span>
+        <span id="wordcloud" class="myplot"></span>
     </div>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -43,6 +47,7 @@
     <script src="https://unpkg.com/tippy.js@6"></script>
     <script src="./wordcloud.js"></script>
     <script src="./net.js"></script>
+    <script src="./addoption.js"></script>
     <script src="./plot.js"></script>
 
 </body>
