@@ -5,35 +5,50 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>plot</title>
-    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-        integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" /> -->
+    <title>viz tweet</title>
     <!-- link to my css file -->
     <link rel="stylesheet" href="./css/mycss.css">
     <style>
-        .options-container {
+        h1 {
             text-align: center;
-            margin-bottom: 20px;
-            display: block;
         }
 
-        .myplot-container {
-            display: flex;
-        }
-
-        .myplot {
-            width: 500px;
-            height: 600px;
-            align-content: center;
-        }
-
-        .option-container {
+        .plot-container {
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            height: max-content;
+            justify-content: center;
+            margin: 5px;
+        }
+
+        #main {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+        }
+
+
+        #forcegraph-options {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #_main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+        }
+
+        #interval-input {
+            display: flex;
+            flex-direction: row;
+            width: 1000px;
         }
 
         .tippy-box[data-theme~='transparent'] {
@@ -43,20 +58,31 @@
 </head>
 
 <body>
-    <div class="myplot-container">
-        <span id="forcegraph" class="myplot"></span>
-        <span id="wordcloud" class="myplot"></span>
+    <div>
+        <h1>Twitter Data Visualization</h1>
     </div>
-    <div class="option-container">
-        <span id="forcegraph-options" class="options-container"></span>
-        <span id="wordcloud-options" class="options-container"></span>
+    <div id="_main">
+        <div id="interval-input" ,class="options"></div>
+        <div id="main" class="container">
+            <div id="fg" ,class="plot-container">
+                <div id="forcegraph" class="plot"></div>
+                <div id="forcegraph-options" , class="options"></div>
+            </div>
+            <div id="wc" ,class="plot-container">
+                <div id="wordcloud" class="plot"></div>
+                <div id="wordcloud-options" , class="options"></div>
+            </div>
+        </div>
     </div>
+
+
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.rawgit.com/jasondavies/d3-cloud/master/build/d3.layout.cloud.js" />
     </script>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
+    <script src="main_d3.js"> </script>
     <script src="./wordcloud.js"></script>
     <script src="./net.js"></script>
     <script src="./addoption.js"></script>

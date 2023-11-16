@@ -1,18 +1,16 @@
-function addDayOption(svg, width, height) {
+function addDayOption() {
     // Define your dates
     var dates = ["20", "21", "22", "23", "24", "25"];
 
-    // Add foreignObject to the SVG
-    var foreignObject = svg.append("foreignObject")
-        .attr("width", 150)
-        .attr("height", 50)
-        .attr("x", -width / 2) // Position at the left edge of the SVG
-        .attr("y", -height / 2); // Position at the top edge of the SVG
+    // Select the container
+    var div = d3.select("#forcegraph-options");
 
-    // Add div to the foreignObject, give it a id
-    var div = foreignObject.append("xhtml:div")
-        .attr("class", "options-container")
-        .attr("id", "dayOption");
+    // create a new div for the select
+    div.append("div")
+        .attr("id", "dateSelectDiv")
+        .attr("class", "option-div");
+
+    div = d3.select("#dateSelectDiv");
 
     // Add label
     div.append("label")
@@ -40,22 +38,20 @@ function addDayOption(svg, width, height) {
         // update the params
         params.day = parseInt(day);
         // update the graph
-        plot(day);
+        plot();
     });
 }
 
-function addConvThresholdInput(svg, width, height) {
-    // Add foreignObject to the SVG
-    var foreignObject = svg.append("foreignObject")
-        .attr("width", 130)
-        .attr("height", 50)
-        .attr("x", -width / 2 + 150) // Position at the left edge of the SVG
-        .attr("y", -height / 2); // Position at the top edge of the SVG
+function addConvThresholdInput() {
+    // Select the container
+    var div = d3.select("#forcegraph-options");
 
-    // Add div to the foreignObject, give it a id
-    var div = foreignObject.append("xhtml:div")
-        .attr("class", "options-container")
-        .attr("id", "convThresholdOption");
+    // create a new div
+    div.append("div")
+        .attr("id", "convThresholdDiv")
+        .attr("class", "option-div");
+
+    div = d3.select("#convThresholdDiv");
 
     // Add label
     div.append("label")
@@ -67,7 +63,7 @@ function addConvThresholdInput(svg, width, height) {
         .attr("type", "text")
         .attr("id", "convThresholdInput")
         .attr("value", params.conversationThreshold)
-        .style("width", "16px");
+        .style("width", "22px");
 
     // Add event listener
     input.on("change", function () {
@@ -77,18 +73,16 @@ function addConvThresholdInput(svg, width, height) {
     });
 }
 
-function addCountThresholdInput(svg, width, height) {
-    // Add foreignObject to the SVG
-    var foreignObject = svg.append("foreignObject")
-        .attr("width", 150)
-        .attr("height", 50)
-        .attr("x", -width / 2 + 130 + 150) // Position at the left edge of the SVG
-        .attr("y", -height / 2); // Position at the top edge of the SVG
+function addCountThresholdInput() {
+    // Select the container
+    var div = d3.select("#forcegraph-options");
 
-    // Add div to the foreignObject, give it a id
-    var div = foreignObject.append("xhtml:div")
-        .attr("class", "options-container")
-        .attr("id", "countThresholdOption");
+    // create a new div
+    div.append("div")
+        .attr("id", "countThresholdDiv")
+        .attr("class", "option-div");
+
+    div = d3.select("#countThresholdDiv");
 
     // Add label
     div.append("label")
@@ -100,7 +94,7 @@ function addCountThresholdInput(svg, width, height) {
         .attr("type", "text")
         .attr("id", "countThresholdInput")
         .attr("value", params.countThreshold)
-        .style("width", "16px");
+        .style("width", "22px");
 
     // Add event listener
     input.on("change", function () {
@@ -110,18 +104,15 @@ function addCountThresholdInput(svg, width, height) {
     });
 }
 
-function addTopInput(svg, width, height) {
-    // Add foreignObject to the SVG
-    var foreignObject = svg.append("foreignObject")
-        .attr("width", 75)
-        .attr("height", 50)
-        .attr("x", -width / 2) // Position at the left edge of the SVG
-        .attr("y", -height / 2); // Position at the top edge of the SVG
+function addTopInput() {
+    var div = d3.select("#wordcloud-options");
 
-    // Add div to the foreignObject, give it a id
-    var div = foreignObject.append("xhtml:div")
-        .attr("class", "options-container")
-        .attr("id", "topOption");
+    // create a new div
+    div.append("div")
+        .attr("id", "topDiv")
+        .attr("class", "option-div");
+
+    div = d3.select("#topDiv");
 
     // Add label
     div.append("label")
@@ -141,4 +132,63 @@ function addTopInput(svg, width, height) {
         params.top = top;
         updateWordCloud(params.data);
     });
+}
+
+function addIntervalInput() {
+    var div = d3.select("#interval-input");
+
+    div.append("div")
+        .attr("id", "fromDiv")
+        .attr("class", "option-div")
+        .append("label")
+        .text("From: ");
+    d3.select("#fromDiv")
+        .append("input")
+        .attr("type", "date")
+        .attr("min", "2020-10-20")
+        .attr("max", "2020-10-25");
+    d3.select("#fromDiv")
+        .append("input")
+        .attr("type", "time")
+        .attr("min", "00:00")
+        .attr("max", "23:59");
+
+    div.append("div")
+        .attr("id", "toDiv")
+        .attr("class", "option-div")
+        .append("label")
+        .text("To: ");
+    d3.select("#toDiv")
+        .append("input")
+        .attr("type", "date")
+        .attr("min", "2020-10-20")
+        .attr("max", "2020-10-25");
+    d3.select("#toDiv")
+        .append("input")
+        .attr("type", "time")
+        .attr("min", "00:00")
+        .attr("max", "23:59");
+
+    // add event listener
+    d3.select("#fromDiv").select("input[type=date]").on("change", function () {
+        var from = d3.select(this).property("value");
+        params.fromDate = from;
+        plotGraphWithoutReload(false);
+    });
+    d3.select("#fromDiv").select("input[type=time]").on("change", function () {
+        var from = d3.select(this).property("value");
+        params.fromTime = from;
+        plotGraphWithoutReload(false);
+    });
+    d3.select("#toDiv").select("input[type=date]").on("change", function () {
+        var to = d3.select(this).property("value");
+        params.toDate = to;
+        plotGraphWithoutReload(false);
+    });
+    d3.select("#toDiv").select("input[type=time]").on("change", function () {
+        var to = d3.select(this).property("value");
+        params.toTime = to;
+        plotGraphWithoutReload(false);
+    });
+
 }

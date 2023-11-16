@@ -1,28 +1,17 @@
-const dataName = (num) => `2020-10-2${num}.json`;
-const day = Array.from({ length: 6 }, (_, i) => i);
-const cacheDir = "../cache/";
-let stopwords = d3.json("../utils/stopwords-en.json");
-let params = {};
-params.width = 500;
-params.height = 550;
-params.conversationThreshold = 50;
-params.countThreshold = 5;
-params.top = 30;
-params.day = 0;
-params.data = NaN;
-params.Data = [];
-params.DataReady = false;
-
 async function loadAllData() {
     const worker = new Worker("worker.js");
     worker.postMessage(day.map(d => cacheDir + dataName(d)));
     worker.onmessage = function (e) {
+        console.log("done");
         params.Data = e.data;
         params.DataReady = true;
     }
 }
 
 async function loadData(day) {
+    if (params.DataReady) {
+        return params.Data[day];
+    }
     const data = await d3.json(cacheDir + dataName(day));
     return data;
 }
@@ -139,12 +128,43 @@ function updateGraph(word, flag) {
 }
 
 
-async function plotGraphWithoutReload() {
-    let graph = await buildGraph(params.data);
-    let graphElement = document.getElementById("forcegraph");
-    graphElement.innerHTML = "";
-    let forceGraph = DisjointForceDirectedGraph(graph);
-    document.getElementById("forcegraph").appendChild(forceGraph);
+async function plotGraphWithoutReload(flag = true) {
+    if (flag) {
+        let graph = await buildGraph(params.data);
+        let graphElement = document.getElementById("forcegraph");
+        graphElement.innerHTML = "";
+        let forceGraph = DisjointForceDirectedGraph(graph);
+        document.getElementById("forcegraph").appendChild(forceGraph);
+    }
+    else {
+        if (params.DataReady) {
+            if (params.fromDate === false || params.fromTime === false || params.toDate === false || params.toTime === false) {
+                return;
+            }
+            let fromDate = new Date(params.fromDate + " " + params.fromTime);
+            let toDate = new Date(params.toDate + " " + params.toTime);
+            if (fromDate > toDate) {
+                alert("Please select a valid time interval!");
+                return;
+            }
+            const fromDay = fromDate.getDate() - 20;
+            const toDay = toDate.getDate() - 20;
+            const fromTime = fromDate.getHours() * 60 + fromDate.getMinutes();
+            const toTime = toDate.getHours() * 60 + toDate.getMinutes();
+
+            let data = [];
+            for (let i = fromDay; i <= toDay; i++) {
+                if (i === fromDay && i === toDay) {
+                    data = data.concat(params.Data[i].filter(obj => Date.parse(obj.date + " " + obj.time) >= fromTime && Date.parse(obj.date + " " + obj.time) <= toTime));
+                }
+                else {
+                    data = data.concat(params.Data[i]);
+                }
+            }
+            params.data = data;
+            plotGraphWithoutReload(true);
+        }
+    }
 }
 
 async function plot() {
@@ -159,5 +179,10 @@ async function plot() {
     document.getElementById("forcegraph").appendChild(forceGraph);
 }
 
+addDayOption();
+addTopInput();
+addConvThresholdInput();
+addCountThresholdInput();
+addIntervalInput();
 plot();
 loadAllData();

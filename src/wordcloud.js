@@ -23,7 +23,8 @@ function createWordCloud(myWords) {
         var svg = d3.select("#wordcloud").append("svg")
             .attr("width", layout.size()[0])
             .attr("height", layout.size()[1])
-            .style("border", "1px solid lightgrey")
+            .style("border", "2px solid #1b5e20")
+            .style("border-left", "1px solid #1b5e20")
             .append("g")
             .attr("transform", "translate(" + layout.size()[0] / 2 + "," + (layout.size()[1] / 2) + ")")
         var texts = svg.selectAll("text")
@@ -52,8 +53,6 @@ function createWordCloud(myWords) {
                     flag = 0;
                 }
             });
-
-        addTopInput(svg, width, height);
 
         texts.nodes().forEach(function (node) {
             tippy(node, {

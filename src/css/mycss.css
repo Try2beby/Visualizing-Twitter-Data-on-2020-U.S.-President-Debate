@@ -4,7 +4,6 @@ body {
     color: #f8f9fa; /* 浅灰色文本 */
     margin: 0;
     padding: 20px;
-    display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
@@ -51,7 +50,30 @@ body {
     transition: color 0.3s ease-in-out; /* 添加颜色过渡效果 */
   }
   .like-count:hover, .retweet-count:hover  .reply-count:hover{
-    color: #007bff; /* 鼠标悬停时改变颜色 */
-
-  
+    color: #007bff; /* 鼠标悬停时改变颜色 */  
   }
+
+ 
+
+.option-div {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 10px 0;
+  background-color: #f9f9f9;
+  color: #333;
+  font-size: 14px;
+  height: 16px;
+  display: inline-block;
+}
+
+.option-div label {
+  font-weight: bold;
+}
+
+.option-div select, .option-div input {
+  margin-left: 10px;
+}
+
+.option-div:hover {
+  background-color: #e9e9e9;
+}

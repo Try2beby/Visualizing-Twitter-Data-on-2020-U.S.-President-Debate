@@ -24,7 +24,8 @@ function DisjointForceDirectedGraph(data) {
         .attr("height", height)
         .attr("viewBox", [-width / 2, -height / 2, width, height])
         .attr("style", "max-width: 100%; height: auto;")
-        .style("border", "1px solid lightgrey");
+        .style("border", "2px solid #1b5e20")
+        .style("border-right", "1px solid #1b5e20");
 
 
     // Add a line for each link, and a circle for each node.
