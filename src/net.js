@@ -45,29 +45,25 @@ function DisjointForceDirectedGraph(data) {
         .attr("class", "brush")
         .call(brush);
 
-    // addDayOption(svg, width, height);
-    // addConvThresholdInput(svg, width, height);
-    // addCountThresholdInput(svg, width, height);
-
     const node = svg.append("g")
         .attr("stroke", "#fff")
         .attr("stroke-width", 1.5)
         .selectAll("circle")
         .data(nodes)
         .join("circle")
-        .attr("r", 5)
-        .attr("fill", d => d.type === "tweet" ? color(d.group) : "white")
+        .attr("r", d => d.value)
+        .attr("fill", d => color(d.group))
         .on('mouseover', function (event, d) {
-            d3.select(this).transition().attr("r", 8);
+            d3.select(this).transition().attr("r", d.value * 1.5);
         })
         .on('mouseout', function (event, d) {
 
-            d3.select(this).transition().attr("r", 5);
+            d3.select(this).transition().attr("r", d.value);
         });;
 
 
-    // node.append("title")
-    //     .text(d => d.id);
+    node.append("title")
+        .text(d => d.group);
 
     // Add a drag behavior.
     node.call(d3.drag()
@@ -89,48 +85,48 @@ function DisjointForceDirectedGraph(data) {
     });
 
     // add tooltip by tippy
-    node.nodes().forEach(function (node) {
-        let tooltipContent;
-        let theme;
-        const d = node.__data__;
-        switch (d.type) {
-            case "tweet":
-                tooltipContent = `
-                <div class="post">
-                <div class="post-header">
-                  <span>${d.username}</span>
-                  <span>${d.date.substring(5)} ${d.time}</span>
-                </div>
-                <div class="post-content">${d.tweet}</div>
-                <div class="post-footer">
-                <span class="reply-count">💬 ${d.replies_count}&nbsp;&nbsp;&nbsp;</span>
-                <span class="retweet-count">🔁 ${d.retweets_count}&nbsp;&nbsp;&nbsp;</span>
-                <span class="like-count">❤️ ${d.likes_count}</span>
-                </div>
-                `;
-                theme = "transparent";
-                break;
-            case "conversation":
-                tooltipContent = `
-                    <table style="text-align: left; font-size: 10px;">
-                        <tr>
-                            <th>Conversation</th>
-                        </tr>
-                    </table>
-                `;
-                theme = "light";
-                break;
-            default:
-                break;
-        }
-        tippy(node, {
-            content: tooltipContent,
-            theme: theme,
-            allowHTML: true,
-            // hide arrow
-            arrow: false,
-        });
-    });
+    // node.nodes().forEach(function (node) {
+    //     let tooltipContent;
+    //     let theme;
+    //     const d = node.__data__;
+    //     switch (d.type) {
+    //         case "tweet":
+    //             tooltipContent = `
+    //             <div class="post">
+    //             <div class="post-header">
+    //               <span>${d.username}</span>
+    //               <span>${d.date.substring(5)} ${d.time}</span>
+    //             </div>
+    //             <div class="post-content">${d.tweet}</div>
+    //             <div class="post-footer">
+    //             <span class="reply-count">💬 ${d.replies_count}&nbsp;&nbsp;&nbsp;</span>
+    //             <span class="retweet-count">🔁 ${d.retweets_count}&nbsp;&nbsp;&nbsp;</span>
+    //             <span class="like-count">❤️ ${d.likes_count}</span>
+    //             </div>
+    //             `;
+    //             theme = "transparent";
+    //             break;
+    //         case "conversation":
+    //             tooltipContent = `
+    //                 <table style="text-align: left; font-size: 10px;">
+    //                     <tr>
+    //                         <th>Conversation</th>
+    //                     </tr>
+    //                 </table>
+    //             `;
+    //             theme = "light";
+    //             break;
+    //         default:
+    //             break;
+    //     }
+    //     tippy(node, {
+    //         content: tooltipContent,
+    //         theme: theme,
+    //         allowHTML: true,
+    //         // hide arrow
+    //         arrow: false,
+    //     });
+    // });
 
     // Reheat the simulation when drag starts, and fix the subject position.
     function dragstarted(event) {

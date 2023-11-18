@@ -41,7 +41,7 @@ useful info
 
 以每条 tweet 为节点，依据 conversation_id 构造图，依据 replies_count, retweets_count, likes_count 之和定义节点大小，依据对 tweet 情感分析的结果上色。
 
-加上 mentions, retweet, user_rt_id,user_rt,retweet_id,reply_to
+加上 mentions, retweet, user_rt_id,user_rt,retweet_id,reply_to，quote
 
 数据可按时间段选取，默认选取所有时间段，可拖动进度条显示图像变化（每帧图展示一定时间粒度内的数据）
 
@@ -61,5 +61,7 @@ link 一张图，显示词云
 
 Theme river
 
+帮我改写这个函数，我希望返回的obj数组结构如下，
 
+[{uer_id,tweets:[{tweet_id,tweet,cleaned_tweet,date,time,replies_count,retweets_count,likes_count,mentions,reply_to,quote}, ...]}...]
 

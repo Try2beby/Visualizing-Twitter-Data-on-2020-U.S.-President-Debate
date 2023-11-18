@@ -1,5 +1,12 @@
 const path = require("path");
 const fs = require("fs");
+
+const Sentiment = require("sentiment");
+const sentiment = new Sentiment();
+
+const natural = require('natural');
+const TfIdf = natural.TfIdf;
+
 const curDir = path.resolve(__dirname);
 const rootDir = path.resolve(__dirname, "../");
 const dataDir = path.resolve(__dirname, "../rawdata");
@@ -15,18 +22,18 @@ const useColumns = ["id", "conversation_id", "date", "time", "user_id", "usernam
 
 
 // const clearnDataRules = [cleanData, cleanTweet, addTags, languageFilter, translates];
-const cleanDataRules = [cleanData, cleanTweet, addTags, languageFilter, getQuote];
+const cleanDataRules = [cleanData, cleanTweet, addTags, sentimentAnalysis, topicExtraction, languageFilter, getQuote, groupData];
 
-async function processData(day) {
+function processData(day) {
     console.log(`processing data for day ${day}`);
-
-    let data = await loadJsonFile(dataDir, dataName(day));
-    data = cleanDataRules.reduce((data, rule) => rule(data), data);
-    console.log(`data length after cleaning: ${data.length}`);
-    // save cleaned data to cache
-    let cachePath = path.join(cacheDir, dataName(day));
-    fs.promises.writeFile(cachePath, JSON.stringify(data), "utf8");
-    console.log(`data saved to ${cachePath}`);
+    loadJsonFile(dataDir, dataName(day)).then((data) => {
+        data = cleanDataRules.reduce((data, rule) => rule(data), data);
+        console.log(`data length after cleaning: ${data.length}`);
+        // save cleaned data to cache
+        let cachePath = path.join(cacheDir, dataName(day));
+        fs.writeFileSync(cachePath, JSON.stringify(data));
+        console.log(`data saved to ${cachePath}`);
+    });
 }
 
 async function loadJsonFile(dataDir, dataName) {
@@ -72,6 +79,33 @@ function cleanData(data, use_columns = useColumns) {
     return cleanData;
 }
 
+function sentimentAnalysis(data) {
+    data = data.map((obj) => {
+        obj.sentiment = sentiment.analyze(obj.tweet);
+        return obj;
+    });
+    return data;
+}
+
+function topicExtraction(data) {
+    // extract topics from tweets
+    // use tf-idf to extract topics
+    // put result in obj.tfidf
+    const tfidf = new TfIdf();
+    data.forEach((obj) => {
+        tfidf.addDocument(obj.cleaned_tweet);
+    });
+
+    data.forEach((obj, i) => {
+        obj.tfidf = [];
+        tfidf.listTerms(i).forEach((item) => {
+            obj.tfidf.push({ term: item.term, tfidf: item.tfidf });
+        });
+    });
+
+    return data;
+}
+
 function cleanTweet(data) {
     // remove retweet, @, url, newline,".","?","!",",","&amp;","2020",hashtags, "“"，"”" 
     data = data.map((obj) => {
@@ -88,14 +122,45 @@ function cleanTweet(data) {
             .replace(/#[\w]*/g, " ")    // remove hashtags
             .replace(/“/g, " ")    // remove “
             .replace(/”/g, " ")    // remove ”
-            .replace(/"/g, " ");    // remove "
-
-
+            .replace(/"/g, " ")   // remove "
+            .toLowerCase();     // change to lowercase
 
         return obj;
     });
     return data;
 }
+
+function groupData(data) {
+    // group data by user_id
+    let groupedData = data.reduce((acc, obj) => {
+        let group = acc.find(item => item.user_id === obj.user_id);
+        if (!group) {
+            group = {
+                user_id: obj.user_id,
+                tweets: []
+            };
+            acc.push(group);
+        }
+        let tweet = {
+            tweet_id: obj.id,
+            tweet: obj.tweet,
+            cleaned_tweet: obj.cleaned_tweet,
+            date: obj.date,
+            time: obj.time,
+            replies_count: obj.replies_count,
+            retweets_count: obj.retweets_count,
+            likes_count: obj.likes_count,
+            mentions: obj.mentions,
+            reply_to: obj.reply_to,
+            quote: obj.quote ? parseInt(obj.quote, 10) : null,
+            sentiment: obj.sentiment
+        };
+        group.tweets.push(tweet);
+        return acc;
+    }, []);
+    return groupedData;
+}
+
 
 function addTags(data) {
     data = data.map((obj) => {
