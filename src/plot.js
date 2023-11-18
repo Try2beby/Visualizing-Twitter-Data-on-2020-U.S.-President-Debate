@@ -44,64 +44,119 @@ async function processWord(data) {
     wordFreq.sort((a, b) => b.frequency - a.frequency);
     // keep the top 30 words
     wordFreq = wordFreq.slice(0, params.top);
-
     return wordFreq;
 }
 
 async function buildGraph(data) {
-    // Count the frequency of each conversation_id
-    let conversationCounts = new Map();
-    data.forEach(obj => conversationCounts.set(obj.conversation_id, (conversationCounts.get(obj.conversation_id) || 0) + 1));
-    // keep conversation_id with frequency > 100
-    let conversation_id = Array.from(conversationCounts, ([id, count]) => ({ id: id, count: count }));
-    conversation_id = conversation_id.filter(d => d.count > params.conversationThreshold);
-    // Keep objects with conversation_id in conversation_id
-    data = data.filter(obj => conversation_id.map(d => d.id).includes(obj.conversation_id));
-    // Keep objects with replies_count+retweets_count+likes_count > 10
-    data = data.filter(obj => obj.replies_count + obj.retweets_count + obj.likes_count > params.countThreshold);
+    // // Count the frequency of each conversation_id
+    // let conversationCounts = new Map();
+    // data.forEach(obj => conversationCounts.set(obj.conversation_id, (conversationCounts.get(obj.conversation_id) || 0) + 1));
+    // // keep conversation_id with frequency > 100
+    // let conversation_id = Array.from(conversationCounts, ([id, count]) => ({ id: id, count: count }));
+    // conversation_id = conversation_id.filter(d => d.count > params.conversationThreshold);
+    // // Keep objects with conversation_id in conversation_id
+    // data = data.filter(obj => conversation_id.map(d => d.id).includes(obj.conversation_id));
+    // // Keep objects with replies_count+retweets_count+likes_count > 10
+    // data = data.filter(obj => obj.replies_count + obj.retweets_count + obj.likes_count > params.countThreshold);
+
+    let groupedData = data.reduce((acc, obj) => {
+        let group = acc.find(item => item.user_id === obj.user_id);
+
+        if (!group) {
+            group = {
+                user_id: obj.user_id,
+                cleaned_tweets: [],
+                tweets: [],
+                tweets_id: [],
+                replies_count: 0,
+                retweets_count: 0,
+                likes_count: 0,
+                mentions: [],
+                reply_to: [],
+                quote: []
+            };
+            acc.push(group);
+        }
+
+        group.tweets.push(obj.tweet);
+        group.cleaned_tweets.push(obj.cleaned_tweet);
+        group.tweets_id.push(obj.id);
+        group.replies_count += obj.replies_count;
+        group.retweets_count += obj.retweets_count;
+        group.likes_count += obj.likes_count;
+        group.mentions = group.mentions.concat(obj.mentions);
+        group.reply_to = group.reply_to.concat(obj.reply_to);
+        if (obj.quote) {
+            group.quote.push(parseInt(obj.quote, 10));
+        }
+        return acc;
+    }, []);
+
+    // keep obj with replies_count+retweets_count+likes_count > countThreshold
+    groupedData = groupedData.filter(obj => obj.replies_count + obj.retweets_count + obj.likes_count > params.countThreshold);
+
+    // build graph from groupedData
+    // if user2 in user1.mentions, add edge from user1 to user2
+    // if user2 in user1.reply_to, add edge from user1 to user2
+
+    const nodes = [];
+    const links = [];
+    groupedData.forEach(obj => {
+        nodes.push({ user_id: obj.user_id, type: "user", replies_count: obj.replies_count, retweets_count: obj.retweets_count, likes_count: obj.likes_count });
+    });
+    groupedData.forEach(obj => {
+        obj.mentions.forEach(mention => {
+            let target = nodes.find(node => node.id === parseInt(mention.id, 10));
+            if (target) {
+                links.push({ source: obj.user_id, target: target.id, type: "mention" });
+            }
+        });
+        obj.reply_to.forEach(reply => {
+            let target = nodes.find(node => node.id === parseInt(reply.id, 10));
+            if (target) {
+                links.push({ source: obj.user_id, target: target.id, type: "reply" });
+            }
+        });
+        obj.quote.forEach(quote => {
+            let target = groupedData.find(node => node.tweets_id.includes(quote));
+            if (target) {
+                links.push({ source: obj.user_id, target: target.user_id, type: "quote" });
+            }
+        });
+    });
+
+    // var Graph = graphology.Graph;
+    // var graph = new Graph();
+    // groupedData.forEach(obj => {
+    //     graph.addNode(obj.user_id, { type: "user", replies_count: obj.replies_count, retweets_count: obj.retweets_count, likes_count: obj.likes_count });
+    // });
+    // groupedData.forEach(obj => {
+    //     obj.mentions.forEach(mention => {
+    //         try { graph.addEdge(obj.user_id, parseInt(mention.id, 10), { type: "mention" }); }
+    //         catch (err) {
+    //             // console.log(err);
+    //         }
+    //     });
+    //     obj.reply_to.forEach(reply => {
+    //         try { graph.addEdge(obj.user_id, parseInt(reply.id, 10), { type: "reply" }); }
+    //         catch (err) {
+    //             // console.log(err);
+    //         }
+    //     });
+    //     obj.quote.forEach(quote => {
+    //         let quoteObj = data.find(item => item.id === quote);
+    //         if (quoteObj) {
+    //             try { graph.addEdge(obj.user_id, quoteObj.user_id, { type: "quote" }); }
+    //             catch (err) {
+    //                 // console.log(err);
+    //             }
+    //         }
+    //     });
+    // });
+
 
     updateWordCloud(data);
-    // bulid graph from data.id,data.conversation_id
-    // data.replies_count, data.retweets_count, data.likes_count
-    // each node is a tweet, if two tweets have the same conversation_id, they link to same conversation
-    // the size of the node is a function of replies_count, retweets_count, likes_count 
-    let nodes = [];
-    let links = [];
-    // create nodes for each tweet
-    data.forEach(obj => {
-        let node = {};
-        node.id = obj.id;
-        node.group = obj.conversation_id;
-        node.conversation_id = obj.conversation_id;
-        node.replies_count = obj.replies_count;
-        node.retweets_count = obj.retweets_count;
-        node.likes_count = obj.likes_count;
-        node.tweet = obj.tweet;
-        node.cleaned_tweet = obj.cleaned_tweet;
-        node.username = obj.username;
-        node.date = obj.date;
-        node.time = obj.time;
-        node.type = "tweet"
-        nodes.push(node);
-    });
-    nodes.forEach(node => {
-        let link = {};
-        link.source = node.id;
-        link.target = node.conversation_id;
-        link.value = (node.replies_count + node.retweets_count + node.likes_count) / 20 + 1;
-        links.push(link);
-    });
-    // create nodes for each conversation
-    conversation_id.forEach(obj => {
-        let node = {};
-        node.id = obj.id;
-        node.group = obj.id;
-        node.type = "conversation";
-        nodes.push(node);
-    });
-    let graph = {};
-    graph.nodes = nodes;
-    graph.links = links;
+
     return graph;
 }
 
@@ -185,4 +240,4 @@ addConvThresholdInput();
 addCountThresholdInput();
 addIntervalInput();
 plot();
-loadAllData();
+// loadAllData();

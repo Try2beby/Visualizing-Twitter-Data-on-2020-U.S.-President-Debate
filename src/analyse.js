@@ -7,13 +7,15 @@ const cacheDir = path.resolve(__dirname, "../cache");
 
 const dataName = (num) => `2020-10-2${num}.json`;
 let day = Array.from({ length: 6 }, (_, i) => i);
-
+// mentions, reply_to
 const useColumns = ["id", "conversation_id", "date", "time", "user_id", "username",
-    "tweet", "language", "hashtags", "replies_count",
-    "retweets_count", "likes_count"];
+    "tweet", "language", "hashtags",
+    "mentions", "reply_to", "quote_url",
+    "replies_count", "retweets_count", "likes_count"];
+
 
 // const clearnDataRules = [cleanData, cleanTweet, addTags, languageFilter, translates];
-const cleanDataRules = [cleanData, cleanTweet, addTags, languageFilter];
+const cleanDataRules = [cleanData, cleanTweet, addTags, languageFilter, getQuote];
 
 async function processData(day) {
     console.log(`processing data for day ${day}`);
@@ -39,6 +41,17 @@ async function loadJsonFile(dataDir, dataName) {
     return data;
 }
 
+function getQuote(data) {
+    // get quote from quote_url
+    data = data.map((obj) => {
+        if (obj.quote_url) {
+            obj.quote = obj.quote_url.split("/").pop();
+        }
+        return obj;
+    });
+    return data
+}
+
 function cleanData(data, use_columns = useColumns) {
     let cleanData = data.map((obj) => {
         let newObj = {};
@@ -60,19 +73,24 @@ function cleanData(data, use_columns = useColumns) {
 }
 
 function cleanTweet(data) {
-    // remove retweet, @, url, newline,".","?","!",",","&amp;","2020",hashtags
+    // remove retweet, @, url, newline,".","?","!",",","&amp;","2020",hashtags, "“"，"”" 
     data = data.map((obj) => {
-        obj.cleaned_tweet = obj.tweet.replace(/RT @[\w]*:/g, "") // remove retweet
-            .replace(/@[\w]*/g, "") // remove @
-            .replace(/https?:\/\/[A-Za-z0-9./]*/g, "")  // remove url
-            .replace(/\n/g, "")    // remove newline
-            .replace(/\./g, "")    // remove .
-            .replace(/\?/g, "")    // remove ?
-            .replace(/!/g, "")    // remove !
-            .replace(/,/g, "")    // remove ,
-            .replace(/&amp;/g, "")    // remove &amp;
-            .replace(/2020/g, "")    // remove 2020
-            .replace(/#[\w]*/g, "");    // remove hashtags
+        obj.cleaned_tweet = obj.tweet.replace(/RT @[\w]*:/g, " ") // remove retweet
+            .replace(/@[\w]*/g, " ") // remove @
+            .replace(/https?:\/\/[A-Za-z0-9./]*/g, " ")  // remove url
+            .replace(/\n/g, " ")    // remove newline
+            .replace(/\./g, " ")    // remove .
+            .replace(/\?/g, " ")    // remove ?
+            .replace(/!/g, " ")    // remove !
+            .replace(/,/g, " ")    // remove ,
+            .replace(/&amp;/g, " ")    // remove &amp;
+            .replace(/2020/g, " ")    // remove 2020
+            .replace(/#[\w]*/g, " ")    // remove hashtags
+            .replace(/“/g, " ")    // remove “
+            .replace(/”/g, " ")    // remove ”
+            .replace(/"/g, " ");    // remove "
+
+
 
         return obj;
     });
@@ -138,43 +156,6 @@ function translates(data) {
 }
 
 
-function createGraph(df) {
-    // create a new df with only tweet id and conversation id
-    let dfId = df[['id', 'conversation_id']].copy();
-
-    // transform conversation id datatype to int
-    dfId['conversation_id'] = dfId['conversation_id'].map(Number);
-
-    // create graph
-    let G = new Graph();
-
-    // add nodes
-    dfId['id'].forEach(id => G.addNode(id));
-
-    // add edges, from id to conversation id
-    for (let i = 0; i < dfId.length; i++) {
-        if (dfId[i]['id'] !== dfId[i]['conversation_id']) {
-            G.addEdge(dfId[i]['id'], dfId[i]['conversation_id']);
-        }
-    }
-
-    // plot the graph
-    let container = document.getElementById('container');
-    let renderer = new Sigma(G, container, {
-        renderers: [
-            {
-                container: container,
-                type: 'canvas'
-            }
-        ],
-        settings: {
-            defaultNodeColor: '#ec5148'
-        }
-    });
-    renderer.refresh();
-}
-
-
 // export functions
 module.exports = {
     cleanDataRules,
@@ -188,7 +169,7 @@ module.exports = {
     addTags,
     languageFilter,
     translates,
-    createGraph,
     loadJsonFile,
-    processData
+    processData,
+    getQuote
 };

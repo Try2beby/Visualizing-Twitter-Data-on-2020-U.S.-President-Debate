@@ -41,6 +41,8 @@ useful info
 
 以每条 tweet 为节点，依据 conversation_id 构造图，依据 replies_count, retweets_count, likes_count 之和定义节点大小，依据对 tweet 情感分析的结果上色。
 
+加上 mentions, retweet, user_rt_id,user_rt,retweet_id,reply_to
+
 数据可按时间段选取，默认选取所有时间段，可拖动进度条显示图像变化（每帧图展示一定时间粒度内的数据）
 
 数据可按关键tag选取，选项
@@ -54,6 +56,10 @@ useful info
 link 一张图，显示词云
 
 要用到的数据
+
+
+
+Theme river
 
 
 
