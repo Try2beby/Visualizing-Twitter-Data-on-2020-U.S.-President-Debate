@@ -53,13 +53,26 @@ function DisjointForceDirectedGraph(data) {
         .join("circle")
         .attr("r", d => d.value)
         .attr("fill", d => color(d.group))
+        .each(function (d) {
+            d.clicked = false;  // Add a clicked state to each node
+        })
         .on('mouseover', function (event, d) {
             d3.select(this).transition().attr("r", d.value * 1.5);
         })
         .on('mouseout', function (event, d) {
 
             d3.select(this).transition().attr("r", d.value);
-        });;
+        })
+        .on('click', function (event, d) {
+            d.clicked = !d.clicked;  // Toggle the clicked state
+            d3.select(this)
+                .transition().duration(200)
+                .attr('fill', d.clicked ? 'white' : color(d.group));  // Change the color based on the clicked state
+            if (d.clicked) {
+                // find obj in Data, noting that Data is an array of arrays
+                sentimentPlot(d.id);
+            }
+        });
 
 
     node.append("title")

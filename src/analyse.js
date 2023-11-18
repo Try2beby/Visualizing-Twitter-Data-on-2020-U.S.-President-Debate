@@ -80,6 +80,7 @@ function cleanData(data, use_columns = useColumns) {
 }
 
 function sentimentAnalysis(data) {
+    console.log("analysing sentiment");
     data = data.map((obj) => {
         obj.sentiment = sentiment.analyze(obj.tweet);
         return obj;
@@ -88,20 +89,21 @@ function sentimentAnalysis(data) {
 }
 
 function topicExtraction(data) {
-    // extract topics from tweets
-    // use tf-idf to extract topics
-    // put result in obj.tfidf
-    const tfidf = new TfIdf();
-    data.forEach((obj) => {
-        tfidf.addDocument(obj.cleaned_tweet);
-    });
+    // console.log("extracting topics from tweets");
+    // const tfidf = new TfIdf();
+    // data.forEach((obj) => {
+    //     tfidf.addDocument(obj.cleaned_tweet);
+    // });
 
-    data.forEach((obj, i) => {
-        obj.tfidf = [];
-        tfidf.listTerms(i).forEach((item) => {
-            obj.tfidf.push({ term: item.term, tfidf: item.tfidf });
-        });
-    });
+    // data.forEach((obj, i) => {
+    //     console.log(`extracting topics from tweet ${i}`);
+    //     const terms = tfidf.listTerms(i);
+    //     if (terms.length > 0) {
+    //         obj.tfidf = { term: terms[0].term, tfidf: terms[0].tfidf };
+    //     } else {
+    //         obj.tfidf = null;
+    //     }
+    // });
 
     return data;
 }

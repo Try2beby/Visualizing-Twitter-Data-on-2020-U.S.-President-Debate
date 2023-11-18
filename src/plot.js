@@ -217,8 +217,6 @@ async function plotGraphWithoutReload(flag = true) {
 async function plot() {
     let data = await loadData(params.day);
     params.data = data;
-    // const wordFreq = await processWord(data);
-    // createWordCloud(wordFreq);
     const graph = await buildGraph(data);
     let graphElement = document.getElementById("forcegraph");
     graphElement.innerHTML = "";
@@ -226,10 +224,10 @@ async function plot() {
     document.getElementById("forcegraph").appendChild(forceGraph);
 }
 
-addDayOption();
-addTopInput();
+// addDayOption();
+// addTopInput();
 // addConvThresholdInput();
 // addCountThresholdInput();
-addIntervalInput();
+// addIntervalInput();
 plot();
-// loadAllData();
+loadAllData();
