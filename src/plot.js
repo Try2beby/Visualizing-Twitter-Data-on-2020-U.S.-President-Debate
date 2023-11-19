@@ -5,7 +5,6 @@ async function loadAllData() {
         alert("Data loading done.");
         params.Data = e.data;
         params.DataReady = true;
-        initSentimentPlot();
     }
 }
 
@@ -27,19 +26,25 @@ async function buildGraph(data) {
     data.forEach(obj => {
         // for all tweets in obj.tweets
         let total_count = 0;
+        let cleaned_tweet = "";
         obj.tweets.forEach(tweet => {
             total_count += tweet.replies_count + tweet.retweets_count + tweet.likes_count;
+            cleaned_tweet += tweet.cleaned_tweet;
         });
         obj.total_count = total_count;
+        obj.cleaned_tweet = cleaned_tweet;
     });
     // filter data with total_count > countThreshold
     data = data.filter(obj => obj.total_count > params.countThreshold);
+
+    updateWordCloud(data);
 
     data.forEach(obj => {
         nodes.push({
             id: obj.user_id, type: "user",
             total_count: obj.total_count,
             username: obj.username,
+            cleaned_tweet: obj.cleaned_tweet
         });
     });
 
@@ -119,22 +124,72 @@ async function buildGraph(data) {
         node.value = (node.total_count - minCount) / (maxCount - minCount) * 6 + 4;
     });
 
-    params.links = links;
     const graph = { nodes: nodes, links: links };
     return graph;
 }
 
+async function updateWordCloud(data) {
+    let wordElement = document.getElementById("wordcloud");
+    wordElement.innerHTML = "";
+    const wordFreq = await processWord(data);
+    createWordCloud(wordFreq);
+}
+
 function initSentimentPlot() {
-    // d3.selectAll("circle").filter(function (d) {
-    //     // choose a random node
-    //     if (Math.random() < 0.4) {
-    //         // find all nodes linked to this node, return a list of node ids
-    //         let linkedNodes = params.links
-    //             .filter(link => link.source.id === d.id || link.target.id === d.id)
-    //             .map(link => link.source.id === d.id ? link.target.id : link.source.id);
-    //         updateSentimentPlot(linkedNodes, d.group);
-    //     }
-    // })
+    // Set the dimensions and margins of the graph
+    const margin = { top: 30, right: 30, bottom: 40, left: 50 },
+        width = params.width - margin.left - margin.right,
+        height = params.height / 2 - 7 - margin.top - margin.bottom;
+
+    // Append the svg object to the body of the page
+    const svg = d3.select("#sentimentplot")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .style("border", "2px solid #1b5e20")
+        .style("border-left", "1px solid #1b5e20")
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Add title
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")
+        .style("font-size", "20px")
+        .style("text-decoration", "underline")
+        .text("Sentiment Score Change");
+
+    // Define color scale
+    const color = d3.scaleOrdinal()
+        .domain([0, 1, 2, 3])
+        .range(["white", "blue", "red", "black"]);  // Change these colors as needed
+
+    // Define the labels for each tag
+    const labels = ["Neither", "Biden(Joe)", "Trump", "Both"];
+
+    // Add the legend
+    const legend = svg.selectAll(".legend")
+        .data(color.domain())
+        .enter().append("g")
+        .attr("class", "legend")
+        .attr("transform", function (d, i) { return "translate(0," + i * 20 + ")"; });
+
+    // Replace the rectangles with circles
+    legend.append("circle")
+        .attr("cx", width - 9) // center the circle
+        .attr("r", 5) // radius of the circle
+        .style("fill", color)
+        .style("fill-opacity", 0.5);  // Set opacity to 0.5
+
+    // Adjust the labels
+    legend.append("text")
+        .attr("x", width - 24)
+        .attr("y", 0) // adjust the y position to align with the circle
+        .attr("dy", ".35em")
+        .style("text-anchor", "end")
+        .style("font-size", "10px") // reduce the font size
+        .text(function (d) { return labels[d]; });
 }
 
 
@@ -215,4 +270,5 @@ addDayOption();
 addCountThresholdInput();
 // addIntervalInput();
 plot();
+initSentimentPlot();
 loadAllData();

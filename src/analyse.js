@@ -154,7 +154,8 @@ function groupData(data) {
             mentions: obj.mentions,
             reply_to: obj.reply_to,
             quote: obj.quote ? parseInt(obj.quote, 10) : null,
-            sentiment: obj.sentiment
+            sentiment: obj.sentiment,
+            tag: obj.tag
         };
         group.tweets.push(tweet);
         return acc;

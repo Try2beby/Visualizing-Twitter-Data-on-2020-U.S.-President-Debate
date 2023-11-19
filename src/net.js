@@ -12,6 +12,7 @@ function DisjointForceDirectedGraph(data) {
     const groups = Array.from(new Set(nodes.map(d => d.group)));
     // Specify the color scale.
     const color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, groups.length));
+    params.color = color;
 
     // Create a simulation with several forces.
     const simulation = d3.forceSimulation(nodes)
@@ -63,7 +64,7 @@ function DisjointForceDirectedGraph(data) {
             d3.selectAll("circle").filter(function (d) {
                 return d.type === "user";
             }
-            ).attr("fill", d => color(d.group));
+            ).attr("fill", d => color(d.group)).attr("r", d => d.value);
 
             // find all nodes linked to this node, return a list of node ids
             // let linkedNodes = links

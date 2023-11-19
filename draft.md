@@ -59,9 +59,5 @@ link 一张图，显示词云
 
 
 
-Theme river
-
-帮我改写这个函数，我希望返回的obj数组结构如下，
-
-[{uer_id,tweets:[{tweet_id,tweet,cleaned_tweet,date,time,replies_count,retweets_count,likes_count,mentions,reply_to,quote}, ...]}...]
+在10月21日-10月27日的 与美国总统选举有关的推特数据上，按照推特间的reply，mention，quote关系，我建立了一个用户的关系图，这张图中收获回复、转发、like越多的用户其圆的直径越大；对于每条推特，我利用JS的sentiment库进行了情感分析。当我点击用户关系图中的某个用户时，会关联地弹出该用户这一段时间内发送推特的sentiment.score的变化折线图，且鼠标悬浮在折线图上时，会呈现该条推特的具体内容，并给出sentiment.positive/negtive。对于这样的可视化，提出一个具体的探索问题，并细化成三个可视化支持的功能（例如，分析社交媒体的事件演变,可以进一步细化成社交媒体舆情的时间趋势,关键人物的行为和话题的演变）
 

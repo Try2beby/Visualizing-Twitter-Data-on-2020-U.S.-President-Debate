@@ -24,20 +24,34 @@ function sentimentPlot(userID, group) {
         replies_count: tweet.replies_count,
         retweets_count: tweet.retweets_count,
         likes_count: tweet.likes_count,
+        total_count: tweet.replies_count + tweet.retweets_count + tweet.likes_count,
         username: tweet.username,
         _date: tweet.date,
         _time: tweet.time,
+        tag: tweet.tag,
+        type: "tweet"
     }));
+
+    // define points radius by total_count
+    if (data.length === 1) {
+        data[0].r = 8;
+    }
+    else {
+        // get the min and max total_count
+        const min_total_count = d3.min(data, d => d.total_count);
+        const max_total_count = d3.max(data, d => d.total_count);
+        data.forEach(d => {
+            d.r = 2 + 6 * (d.total_count - min_total_count) / (max_total_count - min_total_count);
+        });
+    }
+
     // sort data by date
     data.sort((a, b) => a.date - b.date);
 
     // Set the dimensions and margins of the graph
     const margin = { top: 30, right: 30, bottom: 40, left: 50 },
         width = params.width - margin.left - margin.right,
-        height = params.height - margin.top - margin.bottom;
-
-    // Specify the color scale.
-    const color = d3.scaleOrdinal(d3.schemeCategory10);
+        height = params.height / 2 - 7 - margin.top - margin.bottom;
 
     // Append the svg object to the body of the page
     const svg = d3.select("#sentimentplot")
@@ -48,6 +62,46 @@ function sentimentPlot(userID, group) {
         .style("border-left", "1px solid #1b5e20")
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Add title
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")
+        .style("font-size", "20px")
+        .style("text-decoration", "underline")
+        .text("Sentiment Score Change");
+
+    // Define color scale
+    const color = d3.scaleOrdinal()
+        .domain([0, 1, 2, 3])
+        .range(["white", "blue", "red", "black"]);  // Change these colors as needed
+
+    // Define the labels for each tag
+    const labels = ["Neither", "Biden(Joe)", "Trump", "Both"];
+
+    // Add the legend
+    const legend = svg.selectAll(".legend")
+        .data(color.domain())
+        .enter().append("g")
+        .attr("class", "legend")
+        .attr("transform", function (d, i) { return "translate(0," + i * 20 + ")"; });
+
+    // Replace the rectangles with circles
+    legend.append("circle")
+        .attr("cx", width - 9) // center the circle
+        .attr("r", 5) // radius of the circle
+        .style("fill", color)
+        .style("fill-opacity", 0.5);  // Set opacity to 0.5
+
+    // Adjust the labels
+    legend.append("text")
+        .attr("x", width - 24)
+        .attr("y", 0) // adjust the y position to align with the circle
+        .attr("dy", ".35em")
+        .style("text-anchor", "end")
+        .style("font-size", "10px") // reduce the font size
+        .text(function (d) { return labels[d]; });
 
     // Add X axis
     const x = d3.scaleTime()
@@ -85,6 +139,7 @@ function sentimentPlot(userID, group) {
             .attr("text-anchor", "start")
             .text("Score"));
 
+
     // Add the data points
     const points = svg.selectAll(".point")
         .data(data)
@@ -92,8 +147,12 @@ function sentimentPlot(userID, group) {
         .attr("class", "point")
         .attr("cx", d => x(d.date))
         .attr("cy", d => y1(d.score))
-        .attr("r", 2)
-        .attr("fill", "rgb(5, 5, 5)");
+        .attr("r", d => d.r)
+        .style("fill-opacity", 0.5);  // Set opacity to 0.5
+
+    d3.selectAll("circle").filter(function (d) {
+        return d.type === "tweet";
+    }).attr("fill", d => color(d.tag));
 
     // add tooltip 
     points.nodes().forEach(function (node) {

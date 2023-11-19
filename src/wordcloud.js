@@ -10,10 +10,13 @@ async function filterWords(words) {
 }
 
 async function processWord(data) {
-    // use first 1000 objects for testing
-    // data = data.slice(0, 1000);
+    // for each obj of data, obj.tweets is an array of tweets
+    // for each tweet, tweet.cleaned_tweet is the cleaned tweet
+    // concate all the cleaned tweets of each obj into an string
+    let tweets = data.flatMap(obj => obj.tweets.map(tweet => tweet.cleaned_tweet));
+
     // Split the tweets into words
-    let words = data.flatMap(obj => obj.cleaned_tweet.split(/\s+/));
+    let words = tweets.flatMap(tweet => tweet.split(/\s+/));
     let fWords = await filterWords(words);
     // Count the frequency of each word
     let wordCounts = new Map();
@@ -32,12 +35,16 @@ async function processWord(data) {
 function createWordCloud(myWords) {
     var fill = d3.scaleOrdinal(d3.schemeCategory10);
 
+    // find the min and max frequency
+    const minFreq = d3.min(myWords, d => d.frequency);
+    const maxFreq = d3.max(myWords, d => d.frequency);
+
     width = params.width;
-    height = params.height;
+    height = params.height / 2;
     var layout = d3.layout.cloud()
         .size([width, height])
         .words(myWords.map(function (d) {
-            return { text: d.word, size: 15 + d.frequency * 1500, frequency: d.frequency, count: d.count };
+            return { text: d.word, size: 20 + 30 * (d.frequency - minFreq) / (maxFreq - minFreq), frequency: d.frequency, count: d.count };
         }))
         .padding(5)
         // .rotate(function () { return ~~(Math.random() * 2) * 90; })
@@ -48,9 +55,11 @@ function createWordCloud(myWords) {
 
     layout.start();
 
-    let flag = 0;
-
     function draw(words) {
+        words.forEach(word => {
+            word.flag = 0;  // Add flag property to each word
+        });
+
         var svg = d3.select("#wordcloud").append("svg")
             .attr("width", layout.size()[0])
             .attr("height", layout.size()[1])
@@ -70,18 +79,22 @@ function createWordCloud(myWords) {
             })
             .text(function (d) { return d.text; })
             .on("click", function (event, d) {
+                d3.selectAll("circle").filter(function (d) {
+                    return d.type === "user";
+                }
+                ).transition().duration(500).attr("fill", d => params.color(d.group)).attr("r", d => d.value);
                 const word = d.text;
-                if (flag === 0) {
+                if (d.flag === 0) {
                     d3.selectAll("circle").filter(function (d) {
-                        return d.type === "tweet" && d.cleaned_tweet.includes(word);
-                    }).transition().attr("r", 8);
-                    flag = 1;
+                        return d.type === "user" && d.cleaned_tweet.includes(word);
+                    }).transition().duration(500).attr("fill", "white").attr("r", d => d.value * 2);
+                    d.flag = 1;
                 }
                 else {
                     d3.selectAll("circle").filter(function (d) {
-                        return d.type === "tweet" && d.cleaned_tweet.includes(word);
-                    }).transition().attr("r", 5);
-                    flag = 0;
+                        return d.type === "user" && d.cleaned_tweet.includes(word);
+                    }).transition().duration(500).attr("fill", d => params.color(d.group)).attr("r", d => d.value);
+                    d.flag = 0;
                 }
             });
 
