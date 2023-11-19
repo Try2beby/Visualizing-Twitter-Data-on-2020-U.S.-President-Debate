@@ -1,3 +1,34 @@
+async function filterWords(words) {
+    let stopwords = await d3.json("../utils/stopwords-en.json");
+    // drop words in stopwords or additonal stopwords
+    // define addStopwords as ["","-"]
+    const addStopwords = ["", "-", "i’m", "/", 'don’t', "'s", ":", "\"", "“", "”"];
+    stopwords = stopwords.concat(addStopwords);
+    // change words to lowercase when comparing
+    let fwords = words.filter(d => !stopwords.includes(d.toLowerCase()));
+    return fwords;
+}
+
+async function processWord(data) {
+    // use first 1000 objects for testing
+    // data = data.slice(0, 1000);
+    // Split the tweets into words
+    let words = data.flatMap(obj => obj.cleaned_tweet.split(/\s+/));
+    let fWords = await filterWords(words);
+    // Count the frequency of each word
+    let wordCounts = new Map();
+    fWords.forEach(word => wordCounts.set(word, (wordCounts.get(word) || 0) + 1));
+    // calculate the frequency percentage
+    let wordFreq = Array.from(wordCounts, ([word, count]) => ({ word: word, frequency: count / fWords.length, count: count }));
+    // keep word with frequency > 0.001
+    wordFreq = wordFreq.filter(d => d.frequency > 0.001);
+    // sort the words by frequency
+    wordFreq.sort((a, b) => b.frequency - a.frequency);
+    // keep the top 30 words
+    wordFreq = wordFreq.slice(0, params.top);
+    return wordFreq;
+}
+
 function createWordCloud(myWords) {
     var fill = d3.scaleOrdinal(d3.schemeCategory10);
 

@@ -16,3 +16,4 @@ params.fromDate = false;
 params.fromTime = false;
 params.toDate = false;
 params.toTime = false;
+params.links = [];

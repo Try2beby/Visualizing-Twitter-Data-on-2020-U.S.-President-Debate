@@ -2,9 +2,10 @@ async function loadAllData() {
     const worker = new Worker("worker.js");
     worker.postMessage(day.map(d => cacheDir + dataName(d)));
     worker.onmessage = function (e) {
-        console.log("done");
+        alert("Data loading done.");
         params.Data = e.data;
         params.DataReady = true;
+        initSentimentPlot();
     }
 }
 
@@ -14,37 +15,6 @@ async function loadData(day) {
     }
     const data = await d3.json(cacheDir + dataName(day));
     return data;
-}
-
-async function filterWords(words) {
-    let stopwords = await d3.json("../utils/stopwords-en.json");
-    // drop words in stopwords or additonal stopwords
-    // define addStopwords as ["","-"]
-    const addStopwords = ["", "-", "i’m", "/", 'don’t', "'s", ":", "\"", "“", "”"];
-    stopwords = stopwords.concat(addStopwords);
-    // change words to lowercase when comparing
-    let fwords = words.filter(d => !stopwords.includes(d.toLowerCase()));
-    return fwords;
-}
-
-async function processWord(data) {
-    // use first 1000 objects for testing
-    // data = data.slice(0, 1000);
-    // Split the tweets into words
-    let words = data.flatMap(obj => obj.cleaned_tweet.split(/\s+/));
-    let fWords = await filterWords(words);
-    // Count the frequency of each word
-    let wordCounts = new Map();
-    fWords.forEach(word => wordCounts.set(word, (wordCounts.get(word) || 0) + 1));
-    // calculate the frequency percentage
-    let wordFreq = Array.from(wordCounts, ([word, count]) => ({ word: word, frequency: count / fWords.length, count: count }));
-    // keep word with frequency > 0.001
-    wordFreq = wordFreq.filter(d => d.frequency > 0.001);
-    // sort the words by frequency
-    wordFreq.sort((a, b) => b.frequency - a.frequency);
-    // keep the top 30 words
-    wordFreq = wordFreq.slice(0, params.top);
-    return wordFreq;
 }
 
 async function buildGraph(data) {
@@ -68,7 +38,8 @@ async function buildGraph(data) {
     data.forEach(obj => {
         nodes.push({
             id: obj.user_id, type: "user",
-            total_count: obj.total_count
+            total_count: obj.total_count,
+            username: obj.username,
         });
     });
 
@@ -148,16 +119,30 @@ async function buildGraph(data) {
         node.value = (node.total_count - minCount) / (maxCount - minCount) * 6 + 4;
     });
 
+    params.links = links;
     const graph = { nodes: nodes, links: links };
     return graph;
 }
 
-async function updateWordCloud(data) {
-    // update wordcloud
-    let wordFreq = await processWord(data);
-    let element = document.getElementById("wordcloud");
+function initSentimentPlot() {
+    // d3.selectAll("circle").filter(function (d) {
+    //     // choose a random node
+    //     if (Math.random() < 0.4) {
+    //         // find all nodes linked to this node, return a list of node ids
+    //         let linkedNodes = params.links
+    //             .filter(link => link.source.id === d.id || link.target.id === d.id)
+    //             .map(link => link.source.id === d.id ? link.target.id : link.source.id);
+    //         updateSentimentPlot(linkedNodes, d.group);
+    //     }
+    // })
+}
+
+
+function updateSentimentPlot(userID, group) {
+    // update sentiment plot
+    let element = document.getElementById("sentimentplot");
     element.innerHTML = "";
-    createWordCloud(wordFreq, update = true);
+    sentimentPlot(userID, group);
 }
 
 function updateGraph(word, flag) {
@@ -224,10 +209,10 @@ async function plot() {
     document.getElementById("forcegraph").appendChild(forceGraph);
 }
 
-// addDayOption();
+addDayOption();
 // addTopInput();
 // addConvThresholdInput();
-// addCountThresholdInput();
+addCountThresholdInput();
 // addIntervalInput();
 plot();
 loadAllData();

@@ -3,13 +3,15 @@ function DisjointForceDirectedGraph(data) {
     const width = params.width;
     const height = params.height;
 
-    // Specify the color scale.
-    const color = d3.scaleOrdinal(d3.schemeCategory10);
-
     // The force simulation mutates links and nodes, so create a copy
     // so that re-evaluating this cell produces the same result.
     const links = data.links.map(d => ({ ...d }));
     const nodes = data.nodes.map(d => ({ ...d }));
+
+    // Get the unique groups
+    const groups = Array.from(new Set(nodes.map(d => d.group)));
+    // Specify the color scale.
+    const color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, groups.length));
 
     // Create a simulation with several forces.
     const simulation = d3.forceSimulation(nodes)
@@ -37,14 +39,6 @@ function DisjointForceDirectedGraph(data) {
         .join("line")
         .attr("stroke-width", d => Math.sqrt(d.value));
 
-    let brush = d3.brush()
-        .extent([[0 - width / 2, 0 - height / 2], [width, height]])
-        .on("end", brushed);
-
-    svg.append("g")
-        .attr("class", "brush")
-        .call(brush);
-
     const node = svg.append("g")
         .attr("stroke", "#fff")
         .attr("stroke-width", 1.5)
@@ -64,19 +58,31 @@ function DisjointForceDirectedGraph(data) {
             d3.select(this).transition().attr("r", d.value);
         })
         .on('click', function (event, d) {
-            d.clicked = !d.clicked;  // Toggle the clicked state
-            d3.select(this)
-                .transition().duration(200)
-                .attr('fill', d.clicked ? 'white' : color(d.group));  // Change the color based on the clicked state
-            if (d.clicked) {
-                // find obj in Data, noting that Data is an array of arrays
-                sentimentPlot(d.id);
+            // d.clicked = !d.clicked;  // Toggle the clicked state
+            // set node with white color back to original color
+            d3.selectAll("circle").filter(function (d) {
+                return d.type === "user";
             }
+            ).attr("fill", d => color(d.group));
+
+            // find all nodes linked to this node, return a list of node ids
+            // let linkedNodes = links
+            //     .filter(link => link.source.id === d.id || link.target.id === d.id)
+            //     .map(link => link.source.id === d.id ? link.target.id : link.source.id);
+            let linkedNodes = [];
+            linkedNodes.push(d.id);
+            if (params.DataReady) {
+                // set the color of linked nodes to white
+                d3.selectAll("circle").filter(function (d) {
+                    return linkedNodes.includes(d.id);
+                }).attr("fill", "white");
+                updateSentimentPlot(linkedNodes, d.group);
+            }
+
+            // d3.select(this)
+            //     .transition().duration(200)
+            //     .attr('fill', d.clicked ? 'white' : color(d.group));  // Change the color based on the clicked state
         });
-
-
-    node.append("title")
-        .text(d => d.group);
 
     // Add a drag behavior.
     node.call(d3.drag()
@@ -97,84 +103,76 @@ function DisjointForceDirectedGraph(data) {
             .attr("cy", d => d.y);
     });
 
+    // Define the gradient
+    const gradient = svg.append("defs")
+        .append("linearGradient")
+        .attr("id", "legendGradient");
+
+    gradient.selectAll("stop")
+        .data(d3.range(groups.length))
+        .join("stop")
+        .attr("offset", (d, i) => `${i / (groups.length - 1) * 100}%`)
+        .attr("stop-color", d => color(d));
+
+    // Define the legend data
+    const legendData = ["url(#legendGradient)", "white"];
+
+    // Create the legend
+    const legend = svg.append("g")
+        .attr("transform", `translate(${-width / 2 + 20}, ${-height / 2 + 20})`)
+        .selectAll("g")
+        .data(legendData)
+        .join("g");
+
+    // Add the legend shapes
+    legend.each(function (d, i) {
+        const g = d3.select(this);
+        if (i === 0) {
+            // Add a rectangle and two circles for the first legend item
+            g.append("circle")
+                .attr("cx", 5)
+                .attr("cy", 5)
+                .attr("r", 5)
+                .attr("fill", d);
+
+        } else {
+            // Add a circle for the second legend item
+            g.append("circle")
+                .attr("cx", 5)
+                .attr("cy", 5)
+                .attr("r", 5)
+                .attr("fill", d);
+        }
+    });
+
+    // Add the legend text
+    legend.append("text")
+        .attr("x", 15)  // Move the first legend item's text to the right
+        .attr("y", 10)
+        .text((d, i) => i === 0 ? `group [1~${groups.length}]` : "selected");
+    // Position the legend elements
+    legend.attr("transform", (d, i) => `translate(0, ${i * 20})`);
+
     // add tooltip by tippy
-    // node.nodes().forEach(function (node) {
-    //     let tooltipContent;
-    //     let theme;
-    //     const d = node.__data__;
-    //     switch (d.type) {
-    //         case "tweet":
-    //             tooltipContent = `
-    //             <div class="post">
-    //             <div class="post-header">
-    //               <span>${d.username}</span>
-    //               <span>${d.date.substring(5)} ${d.time}</span>
-    //             </div>
-    //             <div class="post-content">${d.tweet}</div>
-    //             <div class="post-footer">
-    //             <span class="reply-count">💬 ${d.replies_count}&nbsp;&nbsp;&nbsp;</span>
-    //             <span class="retweet-count">🔁 ${d.retweets_count}&nbsp;&nbsp;&nbsp;</span>
-    //             <span class="like-count">❤️ ${d.likes_count}</span>
-    //             </div>
-    //             `;
-    //             theme = "transparent";
-    //             break;
-    //         case "conversation":
-    //             tooltipContent = `
-    //                 <table style="text-align: left; font-size: 10px;">
-    //                     <tr>
-    //                         <th>Conversation</th>
-    //                     </tr>
-    //                 </table>
-    //             `;
-    //             theme = "light";
-    //             break;
-    //         default:
-    //             break;
-    //     }
-    //     tippy(node, {
-    //         content: tooltipContent,
-    //         theme: theme,
-    //         allowHTML: true,
-    //         // hide arrow
-    //         arrow: false,
-    //     });
-    // });
+    node.nodes().forEach(function (node) {
+        const d = node.__data__;
+        const tooltipContent = `
+        <strong>${d.username}</strong><br>
+        💬🔁❤️: ${d.total_count}
+    `;
+        tippy(node, {
+            content: tooltipContent,
+            allowHTML: true,
+            // hide arrow
+            // arrow: false,
+        });
+    });
 
     // Reheat the simulation when drag starts, and fix the subject position.
     function dragstarted(event) {
         if (!event.active) simulation.alphaTarget(0.3).restart();
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
-    }
-
-    // Define the brushed function
-    function brushed(event) {
-        if (!event.selection) return; // If no areas are selected, return
-
-        // Get the bounds of the selection
-        let [[x0, y0], [x1, y1]] = event.selection;
-
-        // Check which nodes are within the bounds
-        node.classed("selected", function (d) {
-            return x0 <= d.x && d.x <= x1 && y0 <= d.y && d.y <= y1 && d.type === "conversation";
-        });
-
-        // Get the selected nodes
-        let selectedNodes = node.filter(".selected").data();
-
-        // find all the nodes that are connected to the selected nodes
-        let connectedNodes = [];
-        selectedNodes.forEach(node => {
-            links.forEach(link => {
-                if (link.target.id === node.id) {
-                    connectedNodes.push(link.source);
-                }
-            });
-        });
-
-        // Update the word cloud based on the selected nodes
-        updateWordCloud(connectedNodes);
     }
 
     // Update the subject (dragged node) position during drag.

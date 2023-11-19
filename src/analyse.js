@@ -20,8 +20,6 @@ const useColumns = ["id", "conversation_id", "date", "time", "user_id", "usernam
     "mentions", "reply_to", "quote_url",
     "replies_count", "retweets_count", "likes_count"];
 
-
-// const clearnDataRules = [cleanData, cleanTweet, addTags, languageFilter, translates];
 const cleanDataRules = [cleanData, cleanTweet, addTags, sentimentAnalysis, topicExtraction, languageFilter, getQuote, groupData];
 
 function processData(day) {
@@ -139,6 +137,7 @@ function groupData(data) {
         if (!group) {
             group = {
                 user_id: obj.user_id,
+                username: obj.username,
                 tweets: []
             };
             acc.push(group);

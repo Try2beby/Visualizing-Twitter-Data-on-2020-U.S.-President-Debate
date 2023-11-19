@@ -13,9 +13,9 @@
             text-align: center;
         }
 
-        .plot-container {
+        #plot {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             justify-content: center;
             margin: 5px;
@@ -23,7 +23,7 @@
 
         #main {
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             margin: 5px;
@@ -64,13 +64,12 @@
     <div id="_main">
         <div id="interval-input" ,class="options"></div>
         <div id="main" class="container">
-            <div id="fg" ,class="plot-container">
+            <div id="plot" ,class="plot-container">
                 <div id="forcegraph" class="plot"></div>
-                <div id="forcegraph-options" , class="options"></div>
-            </div>
-            <div id="wc" ,class="plot-container">
                 <div id="sentimentplot" class="plot"></div>
-                <div id="wordcloud-options" , class="options"></div>
+            </div>
+            <div id="option" ,class="plot-container">
+                <div id="forcegraph-options" , class="options"></div>
             </div>
         </div>
     </div>
