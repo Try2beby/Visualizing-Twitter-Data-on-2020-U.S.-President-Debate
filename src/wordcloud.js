@@ -84,18 +84,22 @@ function createWordCloud(myWords) {
                 }
                 ).transition().duration(500).attr("fill", d => params.color(d.group)).attr("r", d => d.value);
                 const word = d.text;
-                if (d.flag === 0) {
-                    d3.selectAll("circle").filter(function (d) {
-                        return d.type === "user" && d.cleaned_tweet.includes(word);
-                    }).transition().duration(500).attr("fill", "white").attr("r", d => d.value * 2);
-                    d.flag = 1;
-                }
-                else {
-                    d3.selectAll("circle").filter(function (d) {
-                        return d.type === "user" && d.cleaned_tweet.includes(word);
-                    }).transition().duration(500).attr("fill", d => params.color(d.group)).attr("r", d => d.value);
-                    d.flag = 0;
-                }
+                d3.selectAll("circle").filter(function (d) {
+                    return d.type === "user" && d.cleaned_tweet.includes(word);
+                }).transition().duration(500).attr("fill", "white").attr("r", d => d.value * 2);
+
+                // if (d.flag === 0) {
+                //     d3.selectAll("circle").filter(function (d) {
+                //         return d.type === "user" && d.cleaned_tweet.includes(word);
+                //     }).transition().duration(500).attr("fill", "white").attr("r", d => d.value * 2);
+                //     d.flag = 1;
+                // }
+                // else {
+                //     d3.selectAll("circle").filter(function (d) {
+                //         return d.type === "user" && d.cleaned_tweet.includes(word);
+                //     }).transition().duration(500).attr("fill", d => params.color(d.group)).attr("r", d => d.value);
+                //     d.flag = 0;
+                // }
             });
 
         texts.nodes().forEach(function (node) {

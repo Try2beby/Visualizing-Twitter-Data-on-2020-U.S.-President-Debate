@@ -29,10 +29,10 @@ async function buildGraph(data) {
         let cleaned_tweet = "";
         obj.tweets.forEach(tweet => {
             total_count += tweet.replies_count + tweet.retweets_count + tweet.likes_count;
-            cleaned_tweet += tweet.cleaned_tweet;
+            cleaned_tweet += " " + tweet.cleaned_tweet;
         });
         obj.total_count = total_count;
-        obj.cleaned_tweet = cleaned_tweet;
+        obj.cleaned_tweet = cleaned_tweet.split(/\s+/);
     });
     // filter data with total_count > countThreshold
     data = data.filter(obj => obj.total_count > params.countThreshold);
@@ -222,35 +222,6 @@ async function plotGraphWithoutReload(flag = true) {
         graphElement.innerHTML = "";
         let forceGraph = DisjointForceDirectedGraph(graph);
         document.getElementById("forcegraph").appendChild(forceGraph);
-    }
-    else {
-        if (params.DataReady) {
-            if (params.fromDate === false || params.fromTime === false || params.toDate === false || params.toTime === false) {
-                return;
-            }
-            let fromDate = new Date(params.fromDate + " " + params.fromTime);
-            let toDate = new Date(params.toDate + " " + params.toTime);
-            if (fromDate > toDate) {
-                alert("Please select a valid time interval!");
-                return;
-            }
-            const fromDay = fromDate.getDate() - 20;
-            const toDay = toDate.getDate() - 20;
-            const fromTime = fromDate.getHours() * 60 + fromDate.getMinutes();
-            const toTime = toDate.getHours() * 60 + toDate.getMinutes();
-
-            let data = [];
-            for (let i = fromDay; i <= toDay; i++) {
-                if (i === fromDay && i === toDay) {
-                    data = data.concat(params.Data[i].filter(obj => Date.parse(obj.date + " " + obj.time) >= fromTime && Date.parse(obj.date + " " + obj.time) <= toTime));
-                }
-                else {
-                    data = data.concat(params.Data[i]);
-                }
-            }
-            params.data = data;
-            plotGraphWithoutReload(true);
-        }
     }
 }
 
